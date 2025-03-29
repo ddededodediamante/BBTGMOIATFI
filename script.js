@@ -53,9 +53,7 @@
 
   const scoreDiv = document.getElementById("score");
 
-  let score = 0;
-  let spawnInterval = 2000;
-  let upgradeCost = 50;
+  var score = 0, spawnInterval = 2000, upgradeCost = 50;
 
   function zx(v) {
     return btoa(JSON.stringify(v)).split('').reverse().join('');;
@@ -63,13 +61,6 @@
 
   function xz(v) {
     return JSON.parse(atob(v.split('').reverse().join('')));
-  }
-
-  if (localStorage.getItem("gameData") !== null) {
-    let data = localStorage.getItem("gameData");
-    let dataXZ = xz(data);
-
-    spawnInterval = dataXZ.a ?? 2000, upgradeCost = dataXZ.b ?? 50, score = dataXZ.c ?? 0;
   }
 
   function saveGame() {
@@ -130,6 +121,15 @@
     obj.pointValue = Math.floor(size);
     obj.collected = false;
     World.add(world, obj);
+  }
+
+  if (localStorage.getItem("gameData") !== null) {
+    let data = localStorage.getItem("gameData");
+    let dataXZ = xz(data);
+
+    spawnInterval = dataXZ.a ?? 2000, upgradeCost = dataXZ.b ?? 50, score = dataXZ.c ?? 0;
+    document.getElementById("upgrade").innerText = "Upgrade Spawn Rate (Cost: " + upgradeCost + ")";
+    updateScoreDisplay();
   }
 
   Events.on(engine, "collisionStart", function (event) {
@@ -193,7 +193,7 @@
     Body.setPosition(conveyor, { x: canvas.width / 2, y: canvas.height - 30 });
   });
 
-  setTimeout(() => {
+  setInterval(() => {
     saveGame();
   }, 5000);
 })();
