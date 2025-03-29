@@ -28,18 +28,26 @@
   Render.run(render);
   Matter.Runner.run(engine);
 
-  let platformWidth = 500,
-    platformHeight = 20;
+  let platformWidth = 550,
+    platformHeight = 20,
+    points = 0,
+    spawnInterval = 2000,
+    upgradeCost = 50,
+    platformAngle = 0.3,
+    gravity = 1,
+    moneyMultiplier = 1;
+
+  engine.world.gravity.y = gravity;
 
   let leftPlatform = Bodies.rectangle(100, canvas.height / 3, platformWidth, platformHeight, {
     isStatic: true,
-    angle: 0.3,
+    angle: platformAngle,
     render: { fillStyle: "#555" },
   });
 
   let rightPlatform = Bodies.rectangle(canvas.width - 100, canvas.height / 3, platformWidth, platformHeight, {
     isStatic: true,
-    angle: -0.3,
+    angle: -platformAngle,
     render: { fillStyle: "#555" },
   });
 
@@ -51,24 +59,72 @@
 
   World.add(world, [leftPlatform, rightPlatform, conveyor]);
 
-  const scoreDiv = document.getElementById("score");
+  let buttons = {
+    upgradeSpawnRate: {
+      enabled: true,
+      baseText: "Reduce Spawn Delay",
+      upgradeCost: 50,
+      upgradeMulti: 1.5,
+      whenPurchase: function () {
+        spawnInterval *= 0.9;
+        return spawnInterval > 400;
+      },
+    },
+    upgradeMoney: {
+      enabled: true,
+      baseText: "Multiply Ball Money",
+      upgradeCost: 100,
+      upgradeMulti: 1.6,
+      whenPurchase: function () {
+        moneyMultiplier += 0.3;
+      },
+    },
+    upgradeAngle: {
+      enabled: true,
+      baseText: "Increase Steepness",
+      upgradeCost: 50,
+      upgradeMulti: 1.3,
+      whenPurchase: function () {
+        platformAngle += 0.02;
+        return platformAngle < 0.6;
+      },
+    },
+    upgradeGravity: {
+      enabled: true,
+      baseText: "Increment Gravity",
+      upgradeCost: 100,
+      upgradeMulti: 1.9,
+      whenPurchase: function () {
+        gravity += 0.2;
+        return gravity < 3;
+      },
+    },
+  };
 
-  var score = 0, spawnInterval = 2000, upgradeCost = 50;
+  let buttonHolder = document.getElementById("buttonHolder");
+  let informationDiv = document.getElementById("information");
 
   function zx(v) {
-    return btoa(JSON.stringify(v)).split('').reverse().join('');;
+    return btoa(JSON.stringify(v)).split("").reverse().join("");
   }
 
   function xz(v) {
-    return JSON.parse(atob(v.split('').reverse().join('')));
+    return JSON.parse(atob(v.split("").reverse().join("")));
   }
 
   function saveGame() {
-    localStorage.setItem("gameData", zx({ a: spawnInterval, b: upgradeCost, c: score }));
-  }
-
-  function updateScoreDisplay() {
-    scoreDiv.innerText = "Score: " + score;
+    localStorage.setItem(
+      "gameData",
+      zx({
+        a: spawnInterval,
+        b: upgradeCost,
+        c: points,
+        d: moneyMultiplier,
+        e: platformAngle,
+        f: gravity,
+        g: buttons,
+      })
+    );
   }
 
   function showFloatingText(x, y, text, width) {
@@ -105,8 +161,6 @@
     }, 1000);
   }
 
-  let lastSpawn = Date.now();
-
   function spawnObject() {
     let size = Math.random() * 30 + 20;
     let x = Math.random() * (canvas.width - size) + size / 2;
@@ -118,18 +172,78 @@
       },
     });
 
-    obj.pointValue = Math.floor(size);
+    obj.pointValue = Math.floor(size / 2);
     obj.collected = false;
     World.add(world, obj);
+  }
+
+  function updateButtons() {
+    for (const key in buttons) {
+      const value = buttons[key];
+      let button = document.getElementById(key);
+      button.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
+    }
+  }
+
+  function updateStuff() {
+    informationDiv.innerHTML = [
+      `Points: ${points}`,
+      `Ball Money: x${moneyMultiplier.toFixed(2)}`,
+      `Steepness: ${platformAngle.toFixed(2)}`,
+      `Gravity: x${gravity.toFixed(2)}`,
+    ].join('<br>');
+
+    Body.setAngle(leftPlatform, platformAngle);
+    Body.setAngle(rightPlatform, -platformAngle);
+    engine.world.gravity.y = gravity;
+  }
+
+  for (const key in buttons) {
+    const value = buttons[key];
+
+    let newButton = document.createElement("button");
+    newButton.disabled = !value.enabled;
+    newButton.id = key;
+    newButton.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
+    newButton.addEventListener("click", function () {
+      if (points < value.upgradeCost) return alert("Not enough points for upgrade!");
+      points -= value.upgradeCost;
+
+      value.upgradeCost = Math.floor(value.upgradeCost * value.upgradeMulti);
+      newButton.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
+
+      if (value.whenPurchase() === false) {
+        value.enabled = false;
+        newButton.disabled = true;
+      }
+
+      updateStuff();
+    });
+    buttonHolder.appendChild(newButton);
   }
 
   if (localStorage.getItem("gameData") !== null) {
     let data = localStorage.getItem("gameData");
     let dataXZ = xz(data);
 
-    spawnInterval = dataXZ.a ?? 2000, upgradeCost = dataXZ.b ?? 50, score = dataXZ.c ?? 0;
-    document.getElementById("upgrade").innerText = "Upgrade Spawn Rate (Cost: " + upgradeCost + ")";
-    updateScoreDisplay();
+    spawnInterval = dataXZ.a ?? 2000;
+    upgradeCost = dataXZ.b ?? 50;
+    points = dataXZ.c ?? 0;
+    moneyMultiplier = dataXZ.d ?? 1;
+    platformAngle = dataXZ.e ?? 0.3;
+    gravity = dataXZ.f ?? 1;
+
+    if (dataXZ.g) {
+      for (const key in dataXZ.g) {
+        if (buttons[key]) {
+          buttons[key].upgradeCost = dataXZ.g[key].upgradeCost;
+          buttons[key].enabled = dataXZ.g[key].enabled;
+        }
+      }
+    }
+
+    updateStuff();
+    updateButtons();
   }
 
   Events.on(engine, "collisionStart", function (event) {
@@ -142,17 +256,25 @@
         if (!object.collected) {
           object.collected = true;
 
-          let pointsEarned = object.pointValue || 1;
-          score += pointsEarned;
-          updateScoreDisplay();
-          showFloatingText(object.position.x, object.position.y, "+" + pointsEarned, object.circleRadius || 0);
+          let pointsEarned = (object.pointValue || 1) * moneyMultiplier;
+          points += Math.floor(pointsEarned);
+          updateStuff();
+          showFloatingText(
+            object.position.x,
+            object.position.y,
+            "+" + Math.floor(pointsEarned),
+            object.circleRadius || 0
+          );
         }
       }
     });
   });
+
   Events.on(engine, "beforeUpdate", function () {
     Matter.Body.setVelocity(conveyor, { x: 2, y: 0 });
   });
+
+  let lastSpawn = Date.now();
 
   (function gameLoop() {
     let now = Date.now();
@@ -173,17 +295,9 @@
     requestAnimationFrame(gameLoop);
   })();
 
-  document.getElementById("upgrade").addEventListener("click", function () {
-    if (score >= upgradeCost) {
-      score -= upgradeCost;
-      updateScoreDisplay();
-      spawnInterval = Math.max(500, spawnInterval * 0.9);
-      upgradeCost = Math.floor(upgradeCost * 1.5);
-      this.innerText = "Upgrade Spawn Rate (Cost: " + upgradeCost + ")";
-    } else {
-      alert("Not enough points for upgrade!");
-    }
-  });
+  setInterval(() => {
+    saveGame();
+  }, 5000);
 
   window.addEventListener("resize", function () {
     canvas.width = Math.min(window.innerWidth, 800);
@@ -192,8 +306,4 @@
     render.options.height = canvas.height;
     Body.setPosition(conveyor, { x: canvas.width / 2, y: canvas.height - 30 });
   });
-
-  setInterval(() => {
-    saveGame();
-  }, 5000);
 })();

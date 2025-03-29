@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   overflow: hidden;
@@ -13,19 +17,34 @@ body {
   height: 100vh;
 }
 
-#score {
+#information {
   position: absolute;
   top: 10px;
   left: 10px;
   font-size: 20px;
 }
 
-#upgrade {
+#buttonHolder {
   position: absolute;
+  display: flex;
+  flex-direction: column;
   top: 10px;
   right: 10px;
-  font-size: 16px;
-  padding: 5px 10px;
+  gap: 5px;
+}
+
+#buttonHolder button {
+  font-size: 15px;
+  padding: 5px;
+  margin: none;
+  cursor: pointer;
+  background-color: #dcdcdc;
+  border: 2px solid #858585;
+  border-radius: 5px;
+}
+
+#buttonHolder button:disabled {
+  opacity: 0.9;
 }
 
 .floating-text {
