@@ -246,7 +246,7 @@
       const value = buttons[key];
       const button = value.element || (value.element = document.getElementById(key));
       
-      if (!value.enabled) {
+      if (value.enabled === false) {
         button.innerText = `${value.baseText} (Unavailable)`;
         button.disabled = true;
       } else {
@@ -259,19 +259,22 @@
   for (const key in buttons) {
     const value = buttons[key];
     const newButton = document.createElement("button");
-    newButton.disabled = !value.enabled || points < value.upgradeCost;
+    newButton.disabled = value.enabled === false || points < value.upgradeCost;
     newButton.id = key;
     newButton.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
     newButton.addEventListener("click", () => {
       if (points < value.upgradeCost) {
         alert("Not enough points for upgrade!");
         return;
-      }
+      } else if (!value.enabled) return;
+
       points -= value.upgradeCost;
       value.upgradeCost = Math.floor(value.upgradeCost * value.upgradeMulti);
       newButton.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
-
-      if (value.whenPurchase() === false) {
+      
+      let stillAvailable = value.whenPurchase();
+      console.log(stillAvailable)
+      if (!stillAvailable) {
         value.enabled = false;
         newButton.disabled = true;
       }
@@ -290,7 +293,7 @@
     moneyMultiplier = dataXZ.d ?? 1;
     platformAngle = dataXZ.e ?? 0.3;
     gravity = dataXZ.f ?? 1;
-    bounciness = Math.max(0.6, dataXZ.h ?? 0.6);
+    bounciness = Math.min(0.9, Math.max(0.6, dataXZ.h ?? 0.6));
     moneyHyperplier = Math.max(1, dataXZ.i ?? 1);
 
     if (dataXZ.g) {
@@ -301,9 +304,9 @@
         }
       }
     }
-
-    updateStuff();
   }
+
+  updateStuff();
 
   Events.on(engine, "collisionStart", (event) => {
     for (const pair of event.pairs) {
