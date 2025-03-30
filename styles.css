@@ -24,27 +24,43 @@ body {
   font-size: 20px;
 }
 
+#information strong {
+  font-size: 25px;
+}
+
 #buttonHolder {
   position: absolute;
   display: flex;
   flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
   top: 10px;
   right: 10px;
   gap: 5px;
 }
 
 #buttonHolder button {
-  font-size: 15px;
+  color: #222;
+  font-size: 14px;
   padding: 5px;
   margin: none;
   cursor: pointer;
   background-color: #dcdcdc;
   border: 2px solid #858585;
   border-radius: 5px;
+  word-wrap: normal;
+  will-change: padding;
+  transition: padding 0.2s ease;
 }
 
 #buttonHolder button:disabled {
-  opacity: 0.9;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+#buttonHolder button:hover {
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 #gameCanvas {
