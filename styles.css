@@ -2,6 +2,10 @@
   box-sizing: border-box;
 }
 
+p {
+  margin: 0;
+}
+
 body {
   margin: 0;
   overflow: hidden;
@@ -53,11 +57,6 @@ body {
   transition: padding 0.2s ease;
 }
 
-#buttonHolder button:disabled {
-  opacity: 0.7;
-  pointer-events: none;
-}
-
 #buttonHolder button:hover {
   padding-left: 10px;
   padding-right: 10px;
@@ -74,4 +73,65 @@ body {
   pointer-events: none;
   opacity: 1;
   transition: transform 1s ease-out, opacity 1s ease-out;
+}
+
+div.line {
+  height: 2px;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.3)
+}
+
+#perksShop {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  top: 10%;
+  left: 10%;
+  bottom: 10%;
+  right: 10%;
+  background-color: #424242dc;
+  padding: 5px;
+  gap: 5px;
+  border-radius: 10px;
+}
+
+#perksShop #closePerksShop {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-family: monospace;
+  font-size: 25px;
+  width: 40px;
+  height: 40px;
+  background-color: rgb(199, 44, 44);
+  color: white;
+  padding: 5px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+#perksShop button {
+  color: #222;
+  font-size: 16px;
+  padding: 6px;
+  margin: none;
+  cursor: pointer;
+  background-color: #dcdcdc;
+  border: 2px solid #858585;
+  border-radius: 5px;
+  will-change: padding;
+  transition: padding 0.2s ease;
+}
+
+#perksShop button:hover {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+:disabled {
+  opacity: 0.7;
+  pointer-events: none;
 }

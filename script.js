@@ -55,7 +55,8 @@
     gravity = 1,
     moneyMultiplier = 1,
     moneyHyperplier = 1,
-    bounciness = 0.6;
+    bounciness = 0.6,
+    perks = [];
 
   engine.world.gravity.y = gravity;
 
@@ -99,59 +100,67 @@
 
   const buttons = {
     upgradeSpawnRate: {
-      enabled: true,
       baseText: "Reduce Spawn Delay",
       upgradeCost: 50,
       upgradeMulti: 1.5,
       whenPurchase: () => {
         spawnInterval *= 0.9;
-        return spawnInterval > 400;
+      },
+      purchaseCondition: () => {
+        return Math.fround(spawnInterval) > 400;
       },
     },
     upgradeMoney: {
-      enabled: true,
       baseText: "Multiply Ball Money",
       upgradeCost: 100,
       upgradeMulti: 1.6,
       whenPurchase: () => {
         moneyMultiplier += 0.3;
       },
+      purchaseCondition: () => {
+        return true;
+      },
     },
     upgradeAngle: {
-      enabled: true,
       baseText: "Increase Steepness",
       upgradeCost: 50,
-      upgradeMulti: 1.3,
+      upgradeMulti: 1.2,
       whenPurchase: () => {
         platformAngle += 0.02;
-        return platformAngle < 0.6;
+      },
+      purchaseCondition: () => {
+        return Math.fround(platformAngle) < 0.6;
       },
     },
     upgradeGravity: {
-      enabled: true,
       baseText: "Increment Gravity",
       upgradeCost: 100,
       upgradeMulti: 1.9,
       whenPurchase: () => {
         gravity += 0.2;
-        return gravity < 3;
+      },
+      purchaseCondition: () => {
+        return Math.fround(gravity) < 3;
       },
     },
     upgradeBounciness: {
-      enabled: true,
       baseText: "+0.1 Bouncy & Hyperplier",
       upgradeCost: 500,
       upgradeMulti: 1.8,
       whenPurchase: () => {
         bounciness += 0.1;
         moneyHyperplier += 0.1;
-        return bounciness < 0.9;
+      },
+      purchaseCondition: () => {
+        return Math.fround(bounciness) < 1;
       },
     },
   };
 
   const buttonHolder = document.getElementById("buttonHolder");
   const informationDiv = document.getElementById("information");
+  const perksShop = document.getElementById('perksShop');
+  const perksGoldBalls = document.getElementById('perksGoldBalls');
 
   const zx = (v) => btoa(JSON.stringify(v)).split("").reverse().join("");
   const xz = (v) => JSON.parse(atob(v.split("").reverse().join("")));
@@ -169,16 +178,12 @@
         g: buttons,
         h: bounciness,
         i: moneyHyperplier,
+        j: perks,
       })
     );
   }
 
-  function showFloatingText(x, y, text, width) {
-    if (!render) {
-      console.error("render is undefined!");
-      return;
-    }
-
+  function showFloatingText(x, y, text) {
     const { bounds, canvas } = render;
     const rect = canvas.getBoundingClientRect();
 
@@ -196,7 +201,7 @@
     document.body.appendChild(floatElem);
 
     requestAnimationFrame(() => {
-      floatElem.style.transform = "translateY(-50px)";
+      floatElem.style.transform = "translateY(-30px)";
       floatElem.style.opacity = 0;
     });
 
@@ -206,6 +211,8 @@
   }
 
   function spawnObject() {
+    const isGold = perks.includes("goldBalls") && Math.random() > 0.9;
+
     const size = Math.random() * 30 + 20;
     const x = Math.random() * (canvas.width - size) + size / 2;
     const color =
@@ -213,18 +220,30 @@
       Math.floor(Math.random() * 16777215)
         .toString(16)
         .padStart(6, "0");
+
+    const myRender = isGold
+      ? {
+          sprite: {
+            texture: "./gold.png",
+            xScale: size / 333,
+            yScale: size / 333,
+          },
+        }
+      : { fillStyle: color };
+
     const obj = Bodies.circle(x, -50, size / 2, {
       restitution: bounciness,
       label: "fallingObject",
-      render: { fillStyle: color },
+      render: myRender,
       collisionFilter: {
-        category: CATEGORY_UNCOLLECTED,      
-        mask: CATEGORY_UNCOLLECTED | CATEGORY_COLLECTED | CATEGORY_INVISIBLE_WALL,     
+        category: CATEGORY_UNCOLLECTED,
+        mask: CATEGORY_UNCOLLECTED | CATEGORY_COLLECTED | CATEGORY_INVISIBLE_WALL,
       },
     });
 
-    obj.pointValue = Math.floor(size / 2);
+    obj.pointValue = Math.floor(size / 2) * (isGold ? 2 : 1);
     obj.collected = false;
+
     World.add(world, obj);
   }
 
@@ -245,39 +264,49 @@
     for (const key in buttons) {
       const value = buttons[key];
       const button = value.element || (value.element = document.getElementById(key));
-      
-      if (value.enabled === false) {
-        button.innerText = `${value.baseText} (Unavailable)`;
-        button.disabled = true;
-      } else {
+
+      let condition = value.purchaseCondition();
+
+      if (condition === true) {
         button.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
         button.disabled = points < value.upgradeCost;
+      } else {
+        button.innerText = `${value.baseText} (Unavailable)`;
+        button.disabled = true;
       }
     }
+
+    if (perks.includes('goldBalls')) {
+      perksGoldBalls.innerText = 'Gold Balls (Obtained)';
+      perksGoldBalls.disabled = true;
+    } else perksGoldBalls.disabled = points < 2400;
   }
 
   for (const key in buttons) {
     const value = buttons[key];
     const newButton = document.createElement("button");
-    newButton.disabled = value.enabled === false || points < value.upgradeCost;
+    newButton.disabled = value.purchaseCondition() || points < value.upgradeCost;
     newButton.id = key;
     newButton.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
     newButton.addEventListener("click", () => {
+      if (newButton.disabled) return;
+
       if (points < value.upgradeCost) {
         alert("Not enough points for upgrade!");
         return;
-      } else if (!value.enabled) return;
+      }
+
+      if (!value.purchaseCondition()) {
+        alert("You cannot purchase this upgrade right now!");
+        return;
+      }
 
       points -= value.upgradeCost;
       value.upgradeCost = Math.floor(value.upgradeCost * value.upgradeMulti);
       newButton.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
-      
-      let stillAvailable = value.whenPurchase();
-      console.log(stillAvailable)
-      if (!stillAvailable) {
-        value.enabled = false;
-        newButton.disabled = true;
-      }
+
+      if (value.whenPurchase) value.whenPurchase();
+
       updateStuff();
     });
     buttonHolder.appendChild(newButton);
@@ -293,14 +322,14 @@
     moneyMultiplier = dataXZ.d ?? 1;
     platformAngle = dataXZ.e ?? 0.3;
     gravity = dataXZ.f ?? 1;
-    bounciness = Math.min(0.9, Math.max(0.6, dataXZ.h ?? 0.6));
+    bounciness = Math.min(1, Math.max(0.6, dataXZ.h ?? 0.6));
     moneyHyperplier = Math.max(1, dataXZ.i ?? 1);
+    perks = dataXZ.j ?? [];
 
     if (dataXZ.g) {
       for (const key in dataXZ.g) {
         if (buttons[key]) {
           buttons[key].upgradeCost = dataXZ.g[key].upgradeCost;
-          buttons[key].enabled = dataXZ.g[key].enabled;
         }
       }
     }
@@ -322,7 +351,7 @@
         const pointsEarned = Math.floor((object.pointValue || 1) * (moneyMultiplier * moneyHyperplier));
         points += pointsEarned;
         updateStuff();
-        showFloatingText(object.position.x, object.position.y, "+" + pointsEarned, object.circleRadius || 0);
+        showFloatingText(object.position.x, object.position.y, "+" + pointsEarned);
       }
     }
   });
@@ -355,4 +384,22 @@
 
   setInterval(saveGame, 5000);
   window.addEventListener("resize", updateCanvasSize);
+
+  /* Perks Shop */
+  document.getElementById("openPerksShop").addEventListener("click", () => {
+    perksShop.style.display = 'flex';
+    buttonHolder.style.display = 'none';
+  });
+  document.getElementById("closePerksShop").addEventListener("click", () => {
+    perksShop.style.display = 'none';
+    buttonHolder.style.display = 'flex';
+  });
+  perksGoldBalls.addEventListener("click", () => {
+    if (points < 2400) {
+      alert("Not enough points for upgrade!");
+      return;
+    }
+
+    points -= 2400;
+  });
 })();
