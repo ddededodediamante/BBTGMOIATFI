@@ -10,8 +10,25 @@
   let world = engine.world;
 
   let canvas = document.getElementById("gameCanvas");
-  canvas.width = Math.min(window.innerWidth, 800);
-  canvas.height = Math.min(window.innerHeight, 600);
+  canvas.width = 800;
+  canvas.height = 600;
+
+  function updateCanvasSize() {
+    let aspectRatio = 800 / 600;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    if (width / height > aspectRatio) {
+      width = height * aspectRatio;
+    } else {
+      height = width / aspectRatio;
+    }
+
+    canvas.style.width = width;
+    canvas.style.height = height;
+  }
+
+  updateCanvasSize();
 
   let render = Render.create({
     canvas: canvas,
@@ -188,10 +205,11 @@
   function updateStuff() {
     informationDiv.innerHTML = [
       `Points: ${points}`,
-      `Ball Money: x${moneyMultiplier.toFixed(2)}`,
+      `Spawn Delay: ${(spawnInterval / 1000).toFixed(2)}`,
       `Steepness: ${platformAngle.toFixed(2)}`,
+      `Ball Money: x${moneyMultiplier.toFixed(2)}`,
       `Gravity: x${gravity.toFixed(2)}`,
-    ].join('<br>');
+    ].join("<br>");
 
     Body.setAngle(leftPlatform, platformAngle);
     Body.setAngle(rightPlatform, -platformAngle);
@@ -286,7 +304,10 @@
     let bodies = Matter.Composite.allBodies(world);
     bodies.forEach((body) => {
       if (body.label === "fallingObject" && body.collected) {
-        if (body.position.x - (body.circleRadius || 0) > canvas.width) {
+        if (
+          body.position.x + (body.circleRadius || 0) < 0 ||
+          body.position.x - (body.circleRadius || 0) > canvas.width
+        ) {
           World.remove(world, body);
         }
       }
@@ -300,10 +321,6 @@
   }, 5000);
 
   window.addEventListener("resize", function () {
-    canvas.width = Math.min(window.innerWidth, 800);
-    canvas.height = Math.min(window.innerHeight, 600);
-    render.options.width = canvas.width;
-    render.options.height = canvas.height;
-    Body.setPosition(conveyor, { x: canvas.width / 2, y: canvas.height - 30 });
+    updateCanvasSize();
   });
 })();

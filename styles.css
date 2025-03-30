@@ -47,6 +47,11 @@ body {
   opacity: 0.9;
 }
 
+#gameCanvas {
+  border: 5px solid #333;
+  border-radius: 10px;
+}
+
 .floating-text {
   position: absolute;
   font-size: 18px;
