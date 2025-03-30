@@ -11,6 +11,9 @@
   const ASPECT_RATIO = 800 / 600;
   const MAX_WIDTH = 810;
   const MAX_HEIGHT = 610;
+  const CATEGORY_UNCOLLECTED = 0b1;
+  const CATEGORY_COLLECTED = 0b10;
+  const CATEGORY_INVISIBLE_WALL = 0b100;
 
   function updateCanvasSize() {
     let width = Math.min(window.innerWidth, MAX_WIDTH);
@@ -56,6 +59,24 @@
 
   engine.world.gravity.y = gravity;
 
+  const leftWall = Bodies.rectangle(-10, canvas.height / 2, 20, canvas.height, {
+    isStatic: true,
+    render: { visible: false },
+    collisionFilter: {
+      category: CATEGORY_INVISIBLE_WALL,
+      mask: CATEGORY_UNCOLLECTED,
+    },
+  });
+
+  const rightWall = Bodies.rectangle(canvas.width + 10, canvas.height / 2, 20, canvas.height, {
+    isStatic: true,
+    render: { visible: false },
+    collisionFilter: {
+      category: CATEGORY_INVISIBLE_WALL,
+      mask: CATEGORY_UNCOLLECTED,
+    },
+  });
+
   const leftPlatform = Bodies.rectangle(100, canvas.height / 3, platformWidth, platformHeight, {
     isStatic: true,
     angle: platformAngle,
@@ -68,13 +89,13 @@
     render: { fillStyle: "#555" },
   });
 
-  const conveyor = Bodies.rectangle(canvas.width / 2, canvas.height - 30, canvas.width, 20, {
+  const conveyor = Bodies.rectangle(canvas.width / 2, canvas.height + 5, canvas.width, 50, {
     isStatic: true,
     render: { fillStyle: "#777" },
     label: "conveyor",
   });
 
-  World.add(world, [leftPlatform, rightPlatform, conveyor]);
+  World.add(world, [leftWall, rightWall, leftPlatform, rightPlatform, conveyor]);
 
   const buttons = {
     upgradeSpawnRate: {
@@ -196,6 +217,10 @@
       restitution: bounciness,
       label: "fallingObject",
       render: { fillStyle: color },
+      collisionFilter: {
+        category: CATEGORY_UNCOLLECTED,      
+        mask: CATEGORY_UNCOLLECTED | CATEGORY_COLLECTED | CATEGORY_INVISIBLE_WALL,     
+      },
     });
 
     obj.pointValue = Math.floor(size / 2);
@@ -220,8 +245,14 @@
     for (const key in buttons) {
       const value = buttons[key];
       const button = value.element || (value.element = document.getElementById(key));
-      button.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
-      button.disabled = points < value.upgradeCost;
+      
+      if (!value.enabled) {
+        button.innerText = `${value.baseText} (Unavailable)`;
+        button.disabled = true;
+      } else {
+        button.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
+        button.disabled = points < value.upgradeCost;
+      }
     }
   }
 
@@ -282,6 +313,9 @@
 
       if (object && !object.collected) {
         object.collected = true;
+        object.collisionFilter.category = CATEGORY_COLLECTED;
+        object.collisionFilter.mask = CATEGORY_UNCOLLECTED | CATEGORY_COLLECTED;
+
         const pointsEarned = Math.floor((object.pointValue || 1) * (moneyMultiplier * moneyHyperplier));
         points += pointsEarned;
         updateStuff();
