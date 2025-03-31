@@ -46,7 +46,7 @@
   Render.run(render);
   Runner.run(Runner.create(), engine);
 
-  let platformWidth = 550,
+  var platformWidth = 550,
     platformHeight = 20,
     points = 0,
     spawnInterval = 2000,
@@ -396,10 +396,10 @@
   });
   perksGoldBalls.addEventListener("click", () => {
     if (points < 2400) {
-      alert("Not enough points for upgrade!");
-      return;
+      return alert("Not enough points for upgrade!");
+    } else {
+      points -= 2400;
+      perks.push('goldBalls');
     }
-
-    points -= 2400;
   });
 })();
