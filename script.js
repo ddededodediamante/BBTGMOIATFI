@@ -161,6 +161,7 @@
   const informationDiv = document.getElementById("information");
   const perksShop = document.getElementById('perksShop');
   const perksGoldBalls = document.getElementById('perksGoldBalls');
+  const perksFastConveyor = document.getElementById('perksFastConveyor');
 
   const zx = (v) => btoa(JSON.stringify(v)).split("").reverse().join("");
   const xz = (v) => JSON.parse(atob(v.split("").reverse().join("")));
@@ -280,6 +281,11 @@
       perksGoldBalls.innerText = 'Gold Balls (Obtained)';
       perksGoldBalls.disabled = true;
     } else perksGoldBalls.disabled = points < 2400;
+
+    if (perks.includes('fastConveyor')) {
+      perksFastConveyor.innerText = 'Fast Conveyor (Obtained)';
+      perksFastConveyor.disabled = true;
+    } else perksFastConveyor.disabled = points < 3000;
   }
 
   for (const key in buttons) {
@@ -357,7 +363,7 @@
   });
 
   Events.on(engine, "beforeUpdate", () => {
-    Body.setVelocity(conveyor, { x: 2, y: 0 });
+    Body.setVelocity(conveyor, { x: perks.includes('fastConveyor') ? 4 : 2, y: 0 });
   });
 
   let lastSpawn = Date.now();
@@ -400,6 +406,16 @@
     } else {
       points -= 2400;
       perks.push('goldBalls');
+      updateStuff();
+    }
+  });
+  perksFastConveyor.addEventListener("click", () => {
+    if (points < 3000) {
+      return alert("Not enough points for upgrade!");
+    } else {
+      points -= 3000;
+      perks.push('fastConveyor');
+      updateStuff();
     }
   });
 })();
