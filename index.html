@@ -26,15 +26,28 @@
 <body>
     <div id="information">???</div>
 
-    <div id="perksShop" style="display: none">
-        <button id="closePerksShop">X</button>
+    <div class="popup" id="perksShop" style="display: none">
+        <button class="closePopup">X</button>
         <button id="perksGoldBalls">Gold Balls (Cost: 2400)</button>
         <p>10% chance of a ball spawning as gold (x2.5 value)</p>
         <button id="perksFastConveyor">Fast Conveyor (Cost: 3000)</button>
         <p>Doubles the speed of the conveyor</p>
     </div>
 
+    <div class="popup" id="settings" style="display: none">
+        <button class="closePopup">X</button>
+        <button onclick="(() => {
+            if (window.confirm('Are you really sure?') === true) {
+                window.deleteAllMyData = true;
+                localStorage.removeItem('gameData');
+                window.location.reload();
+            }
+        })()">Delete all data</button>
+    </div>
+
     <div id="buttonHolder">
+        <button id="openSettings">Settings</button>
+        <div class="line"></div>
         <button id="openPerksShop">Perks Shop</button>
         <div class="line"></div>
     </div>

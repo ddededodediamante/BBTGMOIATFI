@@ -76,12 +76,13 @@ body {
 }
 
 div.line {
-  height: 2px;
-  width: 100%;
+  height: 3px;
+  width: 50%;
+  border-radius: 3px;
   background-color: rgba(255, 255, 255, 0.3)
 }
 
-#perksShop {
+div.popup {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -97,7 +98,7 @@ div.line {
   border-radius: 10px;
 }
 
-#perksShop #closePerksShop {
+div.popup button.closePopup {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -113,7 +114,7 @@ div.line {
   border-radius: 5px;
 }
 
-#perksShop button {
+div.popup button {
   color: #222;
   font-size: 16px;
   padding: 6px;
@@ -126,7 +127,7 @@ div.line {
   transition: padding 0.2s ease;
 }
 
-#perksShop button:hover {
+div.popup button:hover {
   padding-left: 10px;
   padding-right: 10px;
 }

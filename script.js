@@ -50,7 +50,6 @@
     platformHeight = 20,
     points = 0,
     spawnInterval = 2000,
-    upgradeCost = 50,
     platformAngle = 0.3,
     gravity = 1,
     moneyMultiplier = 1,
@@ -160,6 +159,7 @@
   const buttonHolder = document.getElementById("buttonHolder");
   const informationDiv = document.getElementById("information");
   const perksShop = document.getElementById('perksShop');
+  const settingsPopup = document.getElementById('settings');
   const perksGoldBalls = document.getElementById('perksGoldBalls');
   const perksFastConveyor = document.getElementById('perksFastConveyor');
 
@@ -171,7 +171,6 @@
       "gameData",
       zx({
         a: spawnInterval,
-        b: upgradeCost,
         c: points,
         d: moneyMultiplier,
         e: platformAngle,
@@ -322,12 +321,11 @@
   const savedData = localStorage.getItem("gameData");
   if (savedData !== null) {
     const dataXZ = xz(savedData);
-    spawnInterval = dataXZ.a ?? 2000;
-    upgradeCost = dataXZ.b ?? 50;
+    spawnInterval = Math.max(0.37, dataXZ.a ?? 2000);
     points = dataXZ.c ?? 0;
     moneyMultiplier = dataXZ.d ?? 1;
-    platformAngle = dataXZ.e ?? 0.3;
-    gravity = dataXZ.f ?? 1;
+    platformAngle = Math.min(0.6, dataXZ.e ?? 0.3);
+    gravity = Math.min(3, dataXZ.f ?? 1);
     bounciness = Math.min(1, Math.max(0.6, dataXZ.h ?? 0.6));
     moneyHyperplier = Math.max(1, dataXZ.i ?? 1);
     perks = dataXZ.j ?? [];
@@ -340,6 +338,22 @@
       }
     }
   }
+
+  window.addEventListener("beforeunload", () => {
+    if (window.deleteAllMyData === true) {
+      localStorage.removeItem('gameData');
+    } else {
+      saveGame();
+    }
+  });
+
+  window.addEventListener('storage', () => {
+    if (window.deleteAllMyData === true) {
+      localStorage.removeItem('gameData');
+    } else {
+      saveGame();
+    }
+  });
 
   updateStuff();
 
@@ -391,15 +405,28 @@
   setInterval(saveGame, 5000);
   window.addEventListener("resize", updateCanvasSize);
 
-  /* Perks Shop */
+  /* Perks Shop & Settings */
+
   document.getElementById("openPerksShop").addEventListener("click", () => {
     perksShop.style.display = 'flex';
     buttonHolder.style.display = 'none';
   });
-  document.getElementById("closePerksShop").addEventListener("click", () => {
-    perksShop.style.display = 'none';
-    buttonHolder.style.display = 'flex';
+
+  document.getElementById("openSettings").addEventListener("click", () => {
+    settingsPopup.style.display = 'flex';
+    buttonHolder.style.display = 'none';
   });
+
+  document.querySelectorAll("button.closePopup").forEach(element => {
+    element.addEventListener("click", () => {
+      document.querySelectorAll("div.popup").forEach(popup => {
+        popup.style.display = 'none';
+      });
+
+      buttonHolder.style.display = 'flex';
+    });
+  });
+
   perksGoldBalls.addEventListener("click", () => {
     if (points < 2400) {
       return alert("Not enough points for upgrade!");
@@ -409,6 +436,7 @@
       updateStuff();
     }
   });
+
   perksFastConveyor.addEventListener("click", () => {
     if (points < 3000) {
       return alert("Not enough points for upgrade!");
