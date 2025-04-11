@@ -1,5 +1,6 @@
 (async () => {
-  const { Engine, Render, World, Bodies, Events, Body, Runner, Composite } = Matter;
+  const { Engine, Render, World, Bodies, Events, Body, Runner, Composite } =
+    Matter;
 
   const engine = Engine.create();
   const { world } = engine;
@@ -68,34 +69,64 @@
     },
   });
 
-  const rightWall = Bodies.rectangle(canvas.width + 10, canvas.height / 2, 20, canvas.height, {
-    isStatic: true,
-    render: { visible: false },
-    collisionFilter: {
-      category: CATEGORY_INVISIBLE_WALL,
-      mask: CATEGORY_UNCOLLECTED,
-    },
-  });
+  const rightWall = Bodies.rectangle(
+    canvas.width + 10,
+    canvas.height / 2,
+    20,
+    canvas.height,
+    {
+      isStatic: true,
+      render: { visible: false },
+      collisionFilter: {
+        category: CATEGORY_INVISIBLE_WALL,
+        mask: CATEGORY_UNCOLLECTED,
+      },
+    }
+  );
 
-  const leftPlatform = Bodies.rectangle(100, canvas.height / 3, platformWidth, platformHeight, {
-    isStatic: true,
-    angle: platformAngle,
-    render: { fillStyle: "#555" },
-  });
+  const leftPlatform = Bodies.rectangle(
+    100,
+    canvas.height / 3,
+    platformWidth,
+    platformHeight,
+    {
+      isStatic: true,
+      angle: platformAngle,
+      render: { fillStyle: "#555" },
+    }
+  );
 
-  const rightPlatform = Bodies.rectangle(canvas.width - 100, canvas.height / 3, platformWidth, platformHeight, {
-    isStatic: true,
-    angle: -platformAngle,
-    render: { fillStyle: "#555" },
-  });
+  const rightPlatform = Bodies.rectangle(
+    canvas.width - 100,
+    canvas.height / 3,
+    platformWidth,
+    platformHeight,
+    {
+      isStatic: true,
+      angle: -platformAngle,
+      render: { fillStyle: "#555" },
+    }
+  );
 
-  const conveyor = Bodies.rectangle(canvas.width / 2, canvas.height + 5, canvas.width, 50, {
-    isStatic: true,
-    render: { fillStyle: "#777" },
-    label: "conveyor",
-  });
+  const conveyor = Bodies.rectangle(
+    canvas.width / 2,
+    canvas.height + 5,
+    canvas.width,
+    50,
+    {
+      isStatic: true,
+      render: { fillStyle: "#777" },
+      label: "conveyor",
+    }
+  );
 
-  World.add(world, [leftWall, rightWall, leftPlatform, rightPlatform, conveyor]);
+  World.add(world, [
+    leftWall,
+    rightWall,
+    leftPlatform,
+    rightPlatform,
+    conveyor,
+  ]);
 
   const buttons = {
     upgradeSpawnRate: {
@@ -158,10 +189,11 @@
 
   const buttonHolder = document.getElementById("buttonHolder");
   const informationDiv = document.getElementById("information");
-  const perksShop = document.getElementById('perksShop');
-  const settingsPopup = document.getElementById('settings');
-  const perksGoldBalls = document.getElementById('perksGoldBalls');
-  const perksFastConveyor = document.getElementById('perksFastConveyor');
+  const perksShop = document.getElementById("perksShop");
+  const settingsPopup = document.getElementById("settings");
+  const perksGoldBalls = document.getElementById("perksGoldBalls");
+  const perksFastConveyor = document.getElementById("perksFastConveyor");
+  const perksSplitBalls = document.getElementById("perksSplitBalls");
 
   const zx = (v) => btoa(JSON.stringify(v)).split("").reverse().join("");
   const xz = (v) => JSON.parse(atob(v.split("").reverse().join("")));
@@ -183,7 +215,7 @@
     );
   }
 
-  function showFloatingText(x, y, text) {
+  function showFloatingText(x, y, text, color) {
     const { bounds, canvas } = render;
     const rect = canvas.getBoundingClientRect();
 
@@ -197,6 +229,7 @@
     floatElem.className = "floating-text";
     floatElem.style.left = screenX + "px";
     floatElem.style.top = screenY - 18 + "px";
+    if (color) floatElem.style.color = color;
     floatElem.innerText = text;
     document.body.appendChild(floatElem);
 
@@ -210,11 +243,13 @@
     }, 1000);
   }
 
-  function spawnObject() {
-    const isGold = perks.includes("goldBalls") && Math.random() > 0.9;
+  function spawnObject({ x, y, size } = {}) {
+    const isGold = perks.includes("goldBalls") && Math.random() < 10 / 100;
 
-    const size = Math.random() * 30 + 20;
-    const x = Math.random() * (canvas.width - size) + size / 2;
+    const _size = size ?? Math.random() * 30 + 20;
+    const _x = x ?? Math.random() * (canvas.width - _size) + _size / 2;
+    const _y = y ?? -_size;
+
     const color =
       "#" +
       Math.floor(Math.random() * 16777215)
@@ -225,26 +260,29 @@
       ? {
           sprite: {
             texture: "./gold.png",
-            xScale: size / 333,
-            yScale: size / 333,
+            xScale: _size / 333,
+            yScale: _size / 333,
           },
         }
       : { fillStyle: color };
 
-    const obj = Bodies.circle(x, -50, size / 2, {
+    const obj = Bodies.circle(_x, _y, _size / 2, {
       restitution: bounciness,
       label: "fallingObject",
       render: myRender,
       collisionFilter: {
         category: CATEGORY_UNCOLLECTED,
-        mask: CATEGORY_UNCOLLECTED | CATEGORY_COLLECTED | CATEGORY_INVISIBLE_WALL,
+        mask:
+          CATEGORY_UNCOLLECTED | CATEGORY_COLLECTED | CATEGORY_INVISIBLE_WALL,
       },
     });
 
-    obj.pointValue = Math.floor(size / 2) * (isGold ? 2 : 1);
+    obj.originSize = _size;
+    obj.pointValue = Math.floor(_size / (isGold ? 1 : 2));
     obj.collected = false;
 
     World.add(world, obj);
+    return obj;
   }
 
   function updateStuff() {
@@ -253,7 +291,9 @@
       `Spawn Delay: ${(spawnInterval / 1000).toFixed(2)}`,
       `Steepness: ${platformAngle.toFixed(2)}`,
       `Ball Bounciness: ${bounciness.toFixed(2)}`,
-      `Ball Money: x${moneyMultiplier.toFixed(2)}${moneyHyperplier !== 1 ? ` (x${moneyHyperplier.toFixed(2)})` : ""}`,
+      `Ball Money: x${moneyMultiplier.toFixed(2)}${
+        moneyHyperplier !== 1 ? ` (x${moneyHyperplier.toFixed(2)})` : ""
+      }`,
       `Gravity: x${gravity.toFixed(2)}`,
     ].join("<br>");
 
@@ -263,7 +303,8 @@
 
     for (const key in buttons) {
       const value = buttons[key];
-      const button = value.element || (value.element = document.getElementById(key));
+      const button =
+        value.element || (value.element = document.getElementById(key));
 
       let condition = value.purchaseCondition();
 
@@ -276,21 +317,27 @@
       }
     }
 
-    if (perks.includes('goldBalls')) {
-      perksGoldBalls.innerText = 'Gold Balls (Obtained)';
+    if (perks.includes("goldBalls")) {
+      perksGoldBalls.innerText = "Gold Balls (Obtained)";
       perksGoldBalls.disabled = true;
     } else perksGoldBalls.disabled = points < 2400;
 
-    if (perks.includes('fastConveyor')) {
-      perksFastConveyor.innerText = 'Fast Conveyor (Obtained)';
+    if (perks.includes("fastConveyor")) {
+      perksFastConveyor.innerText = "Fast Conveyor (Obtained)";
       perksFastConveyor.disabled = true;
     } else perksFastConveyor.disabled = points < 3000;
+
+    if (perks.includes("splitBalls")) {
+      perksSplitBalls.innerText = "Split Balls (Obtained)";
+      perksSplitBalls.disabled = true;
+    } else perksSplitBalls.disabled = points < 5000;
   }
 
   for (const key in buttons) {
     const value = buttons[key];
     const newButton = document.createElement("button");
-    newButton.disabled = value.purchaseCondition() || points < value.upgradeCost;
+    newButton.disabled =
+      value.purchaseCondition() || points < value.upgradeCost;
     newButton.id = key;
     newButton.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
     newButton.addEventListener("click", () => {
@@ -322,7 +369,7 @@
   if (savedData !== null) {
     const dataXZ = xz(savedData);
     spawnInterval = Math.max(0.37, dataXZ.a ?? 2000);
-    points = dataXZ.c ?? 0;
+    points = 123456;
     moneyMultiplier = dataXZ.d ?? 1;
     platformAngle = Math.min(0.6, dataXZ.e ?? 0.3);
     gravity = Math.min(3, dataXZ.f ?? 1);
@@ -341,15 +388,15 @@
 
   window.addEventListener("beforeunload", () => {
     if (window.deleteAllMyData === true) {
-      localStorage.removeItem('gameData');
+      localStorage.removeItem("gameData");
     } else {
       saveGame();
     }
   });
 
-  window.addEventListener('storage', () => {
+  window.addEventListener("storage", () => {
     if (window.deleteAllMyData === true) {
-      localStorage.removeItem('gameData');
+      localStorage.removeItem("gameData");
     } else {
       saveGame();
     }
@@ -360,24 +407,74 @@
   Events.on(engine, "collisionStart", (event) => {
     for (const pair of event.pairs) {
       let object = null;
-      if (pair.bodyA.label === "conveyor" && pair.bodyB.label === "fallingObject") object = pair.bodyB;
-      else if (pair.bodyB.label === "conveyor" && pair.bodyA.label === "fallingObject") object = pair.bodyA;
+      if (
+        pair.bodyA.label === "conveyor" &&
+        pair.bodyB.label === "fallingObject"
+      )
+        object = pair.bodyB;
+      else if (
+        pair.bodyB.label === "conveyor" &&
+        pair.bodyA.label === "fallingObject"
+      )
+        object = pair.bodyA;
 
       if (object && !object.collected) {
+        if (perks.includes("splitBalls") && Math.random() < 9 / 100) {
+          const originalSize = object.originSize;
+          const newSize = Math.max(11, originalSize * 0.8);
+
+          const ballLeft = spawnObject({
+            x: object.position.x,
+            y: object.position.y,
+            size: newSize,
+          });
+          const ballRight = spawnObject({
+            x: object.position.x,
+            y: object.position.y,
+            size: newSize,
+          });
+
+          const forceMagnitude = 0.02 * ((newSize * 1.6) / 80);
+
+          Body.applyForce(ballLeft, ballLeft.position, {
+            x: -forceMagnitude,
+            y: -forceMagnitude,
+          });
+
+          Body.applyForce(ballRight, ballRight.position, {
+            x: forceMagnitude,
+            y: -forceMagnitude,
+          });
+
+          showFloatingText(object.position.x, object.position.y, "Split!", "#bd8d4f");
+
+          World.remove(world, object);
+          continue;
+        }
+
         object.collected = true;
         object.collisionFilter.category = CATEGORY_COLLECTED;
         object.collisionFilter.mask = CATEGORY_UNCOLLECTED | CATEGORY_COLLECTED;
 
-        const pointsEarned = Math.floor((object.pointValue || 1) * (moneyMultiplier * moneyHyperplier));
+        const pointsEarned = Math.floor(
+          (object.pointValue || 1) * (moneyMultiplier * moneyHyperplier)
+        );
         points += pointsEarned;
         updateStuff();
-        showFloatingText(object.position.x, object.position.y, "+" + pointsEarned);
+        showFloatingText(
+          object.position.x,
+          object.position.y,
+          "+" + pointsEarned
+        );
       }
     }
   });
 
   Events.on(engine, "beforeUpdate", () => {
-    Body.setVelocity(conveyor, { x: perks.includes('fastConveyor') ? 4 : 2, y: 0 });
+    Body.setVelocity(conveyor, {
+      x: perks.includes("fastConveyor") ? 4 : 2,
+      y: 0,
+    });
   });
 
   let lastSpawn = Date.now();
@@ -393,7 +490,10 @@
     for (const body of Composite.allBodies(world)) {
       if (body.label === "fallingObject" && body.collected) {
         const radius = body.circleRadius || 0;
-        if (body.position.x + radius < 0 || body.position.x - radius > canvasWidth) {
+        if (
+          body.position.x + radius < 0 ||
+          body.position.x - radius > canvasWidth
+        ) {
           World.remove(world, body);
         }
       }
@@ -408,22 +508,22 @@
   /* Perks Shop & Settings */
 
   document.getElementById("openPerksShop").addEventListener("click", () => {
-    perksShop.style.display = 'flex';
-    buttonHolder.style.display = 'none';
+    perksShop.style.display = "flex";
+    buttonHolder.style.display = "none";
   });
 
   document.getElementById("openSettings").addEventListener("click", () => {
-    settingsPopup.style.display = 'flex';
-    buttonHolder.style.display = 'none';
+    settingsPopup.style.display = "flex";
+    buttonHolder.style.display = "none";
   });
 
-  document.querySelectorAll("button.closePopup").forEach(element => {
+  document.querySelectorAll("button.closePopup").forEach((element) => {
     element.addEventListener("click", () => {
-      document.querySelectorAll("div.popup").forEach(popup => {
-        popup.style.display = 'none';
+      document.querySelectorAll("div.popup").forEach((popup) => {
+        popup.style.display = "none";
       });
 
-      buttonHolder.style.display = 'flex';
+      buttonHolder.style.display = "flex";
     });
   });
 
@@ -432,7 +532,7 @@
       return alert("Not enough points for upgrade!");
     } else {
       points -= 2400;
-      perks.push('goldBalls');
+      perks.push("goldBalls");
       updateStuff();
     }
   });
@@ -442,7 +542,17 @@
       return alert("Not enough points for upgrade!");
     } else {
       points -= 3000;
-      perks.push('fastConveyor');
+      perks.push("fastConveyor");
+      updateStuff();
+    }
+  });
+
+  perksSplitBalls.addEventListener("click", () => {
+    if (points < 5000) {
+      return alert("Not enough points for upgrade!");
+    } else {
+      points -= 5000;
+      perks.push("splitBalls");
       updateStuff();
     }
   });
