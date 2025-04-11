@@ -369,7 +369,7 @@
   if (savedData !== null) {
     const dataXZ = xz(savedData);
     spawnInterval = Math.max(0.37, dataXZ.a ?? 2000);
-    points = 123456;
+    points = dataXZ.c ?? 0;
     moneyMultiplier = dataXZ.d ?? 1;
     platformAngle = Math.min(0.6, dataXZ.e ?? 0.3);
     gravity = Math.min(3, dataXZ.f ?? 1);
