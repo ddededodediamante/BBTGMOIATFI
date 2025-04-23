@@ -194,6 +194,8 @@
   const perksGoldBalls = document.getElementById("perksGoldBalls");
   const perksFastConveyor = document.getElementById("perksFastConveyor");
   const perksSplitBalls = document.getElementById("perksSplitBalls");
+  const toggleMusicButton = document.getElementById("toggleMusicButton");
+  const backgroundMusic = document.getElementById("backgroundMusic");
 
   const zx = (v) => btoa(JSON.stringify(v)).split("").reverse().join("");
   const xz = (v) => JSON.parse(atob(v.split("").reverse().join("")));
@@ -340,8 +342,8 @@
       value.purchaseCondition() || points < value.upgradeCost;
     newButton.id = key;
     newButton.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
-    newButton.addEventListener("click", () => {
-      if (newButton.disabled) return;
+    newButton.addEventListener("click", (e) => {
+      if (!e.isTrusted || newButton.disabled) return;
 
       if (points < value.upgradeCost) {
         alert("Not enough points for upgrade!");
@@ -446,7 +448,12 @@
             y: -forceMagnitude,
           });
 
-          showFloatingText(object.position.x, object.position.y, "Split!", "#bd8d4f");
+          showFloatingText(
+            object.position.x,
+            object.position.y,
+            "Split!",
+            "#bd8d4f"
+          );
 
           World.remove(world, object);
           continue;
@@ -556,4 +563,39 @@
       updateStuff();
     }
   });
+
+  function startBackgroundMusic() {
+    backgroundMusic.volume = 0.4;
+
+    if (localStorage.getItem("music") === "false") {
+      toggleMusicButton.textContent = "Turn Music On";
+    } else {
+      backgroundMusic.play().catch(() => {});
+      toggleMusicButton.textContent = "Turn Music Off";
+    }
+  }
+
+  toggleMusicButton.addEventListener("click", () => {
+    if (backgroundMusic.paused) {
+      backgroundMusic.play();
+      localStorage.setItem("music", "true");
+      toggleMusicButton.textContent = "Turn Music Off";
+    } else {
+      backgroundMusic.pause();
+      localStorage.setItem("music", "false");
+      toggleMusicButton.textContent = "Turn Music On";
+    }
+  });
+
+  window.addEventListener(
+    "click",
+    () => {
+      if (localStorage.getItem("music") === "true" && backgroundMusic.paused) {
+        backgroundMusic.play().catch(() => {});
+      }
+    },
+    { once: true }
+  );
+
+  startBackgroundMusic();
 })();

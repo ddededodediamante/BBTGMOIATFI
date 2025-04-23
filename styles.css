@@ -6,6 +6,15 @@ p {
   margin: 0;
 }
 
+a {
+  color: #7ba9ff;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #8db5ff;
+}
+
 body {
   margin: 0;
   overflow: hidden;

@@ -26,10 +26,15 @@
 </head>
 
 <body>
+    <audio id="backgroundMusic" style="display: none;" loop>
+        <source src="music/Disco con Tutti.mp3" type="audio/mp3">
+    </audio>
+
     <div id="information">???</div>
 
     <div class="popup" id="perksShop" style="display: none">
         <button class="closePopup">X</button>
+
         <button id="perksGoldBalls">Gold Balls (Cost: 2400)</button>
         <p>Adds a 10% chance of a ball spawning as gold (x2.5 value)</p>
         <button id="perksFastConveyor">Fast Conveyor (Cost: 3000)</button>
@@ -40,6 +45,9 @@
 
     <div class="popup" id="settings" style="display: none">
         <button class="closePopup">X</button>
+
+        <button id="toggleMusicButton">Toggle Music</button>
+        <p>"Disco con Tutti" Kevin MacLeod (incompetech.com)<br>Licensed under Creative Commons: By <a href="http://creativecommons.org/licenses/by/4.0/">Attribution 4.0 License</a></p>
         <button onclick="(() => {
             if (window.confirm('Are you really sure?') === true) {
                 window.deleteAllMyData = true;
