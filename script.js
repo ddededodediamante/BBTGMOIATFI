@@ -56,7 +56,9 @@
     moneyMultiplier = 1,
     moneyHyperplier = 1,
     bounciness = 0.6,
-    perks = [];
+    perks = [],
+    completedAdvancements = [],
+    lastPointsEarned = 0;
 
   engine.world.gravity.y = gravity;
 
@@ -187,15 +189,69 @@
     },
   };
 
+  const advancementsData = {
+    points_100: {
+      name: "Bouncy Balls",
+      description: "Reach 100 points",
+      check: () => points >= 100,
+    },
+    points_1000: {
+      name: "Bouncier Balls",
+      description: "Reach 1000 points",
+      check: () => points >= 1000,
+    },
+    gold_balls: {
+      name: "Golden Touch",
+      description: "Buy the Gold Balls perk",
+      check: () => perks.includes("goldBalls"),
+    },
+    bouncy_max: {
+      name: "Super Bouncy",
+      description: "Max out bounciness",
+      check: () => Math.fround(bounciness) >= 1,
+    },
+    big_earner: {
+      name: "Big Earner",
+      description: "Earn 100 points in a single impact",
+      check: () => lastPointsEarned >= 100,
+    },
+  };
+
+  function checkAdvancements() {
+    for (const id in advancementsData) {
+      if (!completedAdvancements.includes(id) && advancementsData[id].check()) {
+        completedAdvancements.push(id);
+        const { name, description } = advancementsData[id];
+        showAdvancementPopup(name, description);
+      }
+    }
+  }
+
+  function showAdvancementPopup(title, description) {
+    const audio = new Audio("./sounds/Advancement.wav");
+    audio.volume = 1;
+    audio.play().catch(() => {});
+
+    const popup = document.createElement("div");
+    popup.className = "advancement-popup";
+    popup.innerHTML = `<strong>${title}</strong><br>${description}`;
+    document.body.appendChild(popup);
+
+    setTimeout(() => popup.remove(), 4000);
+  }
+
   const buttonHolder = document.getElementById("buttonHolder");
   const informationDiv = document.getElementById("information");
   const perksShop = document.getElementById("perksShop");
   const settingsPopup = document.getElementById("settings");
+  const advancementsPopup = document.getElementById("advancements");
   const perksGoldBalls = document.getElementById("perksGoldBalls");
   const perksFastConveyor = document.getElementById("perksFastConveyor");
   const perksSplitBalls = document.getElementById("perksSplitBalls");
   const toggleMusicButton = document.getElementById("toggleMusicButton");
   const backgroundMusic = document.getElementById("backgroundMusic");
+  const advancementsListDiv = document.getElementById("advancementList");
+  const openAdvancements = document.getElementById("openAdvancements");
 
   const zx = (v) => btoa(JSON.stringify(v)).split("").reverse().join("");
   const xz = (v) => JSON.parse(atob(v.split("").reverse().join("")));
@@ -213,6 +269,7 @@
         h: bounciness,
         i: moneyHyperplier,
         j: perks,
+        k: completedAdvancements,
       })
     );
   }
@@ -261,7 +318,7 @@
     const myRender = isGold
       ? {
           sprite: {
-            texture: "./gold.png",
+            texture: "./images/gold.png",
             xScale: _size / 333,
             yScale: _size / 333,
           },
@@ -333,6 +390,8 @@
       perksSplitBalls.innerText = "Split Balls (Obtained)";
       perksSplitBalls.disabled = true;
     } else perksSplitBalls.disabled = points < 5000;
+
+    checkAdvancements();
   }
 
   for (const key in buttons) {
@@ -378,6 +437,7 @@
     bounciness = Math.min(1, Math.max(0.6, dataXZ.h ?? 0.6));
     moneyHyperplier = Math.max(1, dataXZ.i ?? 1);
     perks = dataXZ.j ?? [];
+    completedAdvancements = dataXZ.k ?? [];
 
     if (dataXZ.g) {
       for (const key in dataXZ.g) {
@@ -466,8 +526,12 @@
         const pointsEarned = Math.floor(
           (object.pointValue || 1) * (moneyMultiplier * moneyHyperplier)
         );
+
+        lastPointsEarned = pointsEarned;
         points += pointsEarned;
+
         updateStuff();
+
         showFloatingText(
           object.position.x,
           object.position.y,
@@ -585,6 +649,25 @@
       localStorage.setItem("music", "false");
       toggleMusicButton.textContent = "Turn Music On";
     }
+  });
+
+  openAdvancements.addEventListener("click", () => {
+    advancementsListDiv.innerHTML = "";
+
+    for (const id in advancementsData) {
+      const adv = advancementsData[id];
+      const isDone = completedAdvancements.includes(id);
+
+      const element = document.createElement("div");
+      element.classList.add("advancement-list");
+      if (isDone) element.classList.add("done");
+      element.innerHTML = `<strong>${adv.name}</strong><br><small>${adv.description}</small>`;
+
+      advancementsListDiv.appendChild(element);
+    }
+
+    advancementsPopup.style.display = "flex";
+    buttonHolder.style.display = "none";
   });
 
   window.addEventListener(

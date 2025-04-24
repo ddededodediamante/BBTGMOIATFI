@@ -2,7 +2,7 @@
   box-sizing: border-box;
 }
 
-p {
+p, h1, h2 {
   margin: 0;
 }
 
@@ -145,4 +145,53 @@ div.popup button:hover {
 :disabled {
   opacity: 0.7;
   pointer-events: none;
+}
+
+@keyframes advancement-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+div.advancement-popup {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #dcdcdc;
+  color: #222;
+  font-size: 16px;
+  padding: 6px;
+  border: 2px solid #858585;
+  border-radius: 5px;
+  box-shadow: 0 0 10px #000;
+  z-index: 9999;
+  animation: advancement-fade 4s ease forwards;
+  pointer-events: none;
+}
+
+div.advancement-list {
+  padding: 6px;
+  margin-bottom: 4px;
+  border: 2px solid #858585;
+  border-radius: 5px;
+  background-color: #ccc;
+  color: #222;
+}
+
+div.advancement-list.done {
+  background-color: #a1dca1;
+  border-color: #78aa78;
 }
