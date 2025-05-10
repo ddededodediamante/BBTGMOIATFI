@@ -245,7 +245,7 @@
         moneyHyperplier += 0.1;
       },
       purchaseCondition: () => {
-        return Math.fround(bounciness) < 1.5;
+        return Math.fround(bounciness) < 1.6;
       },
     },
   };
@@ -274,7 +274,7 @@
     bouncy_max: {
       name: "Super Bouncy",
       description: "Max out bounciness",
-      check: () => Math.fround(bounciness) >= 1.5,
+      check: () => Math.fround(bounciness) >= 1.6,
     },
     big_earner: {
       name: "Big Earner",
@@ -487,8 +487,8 @@
     moneyMultiplier = dataXZ.d ?? 1;
     platformAngle = Math.min(0.6, dataXZ.e ?? 0.3);
     gravity = Math.min(3, dataXZ.f ?? 1);
-    bounciness = Math.min(1.5, Math.max(0.6, dataXZ.h ?? 0.6));
-    moneyHyperplier = Math.max(1, dataXZ.i ?? 1);
+    bounciness = Math.min(1.6, Math.max(0.6, dataXZ.h ?? 0.6));
+    moneyHyperplier = Math.min(2, Math.max(1, dataXZ.i ?? 1));
     perks = dataXZ.j ?? [];
     completedAdvancements = dataXZ.k ?? [];
 
