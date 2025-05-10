@@ -53,7 +53,10 @@
         <button id="toggleMusicButton">Toggle Music</button>
         <p>"Disco con Tutti" Kevin MacLeod (incompetech.com)<br>Licensed under Creative Commons: By <a
                 href="http://creativecommons.org/licenses/by/4.0/">Attribution 4.0 License</a></p>
-        <button onclick="(() => {
+
+        <br>
+
+        <button class="red" onclick="(() => {
             if (window.confirm('Are you really sure?') === true) {
                 window.deleteAllMyData = true;
                 localStorage.removeItem('gameData');

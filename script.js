@@ -487,7 +487,7 @@
     moneyMultiplier = dataXZ.d ?? 1;
     platformAngle = Math.min(0.6, dataXZ.e ?? 0.3);
     gravity = Math.min(3, dataXZ.f ?? 1);
-    bounciness = Math.min(1, Math.max(0.6, dataXZ.h ?? 0.6));
+    bounciness = Math.min(1.5, Math.max(0.6, dataXZ.h ?? 0.6));
     moneyHyperplier = Math.max(1, dataXZ.i ?? 1);
     perks = dataXZ.j ?? [];
     completedAdvancements = dataXZ.k ?? [];

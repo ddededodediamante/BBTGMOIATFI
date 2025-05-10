@@ -49,12 +49,11 @@ div.inline {
   font-size: 25px;
 }
 
-
 @media (max-width: 700px) {
   #information {
     font-size: 18px;
   }
-  
+
   #information strong {
     font-size: 23px;
   }
@@ -64,7 +63,7 @@ div.inline {
   #information {
     font-size: 16px;
   }
-  
+
   #information strong {
     font-size: 21px;
   }
@@ -117,9 +116,22 @@ button {
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-button:hover, button.active {
+button:hover,
+button.active {
   border-color: #b1b1b1;
   background-color: #ffffff;
+}
+
+button.red {
+  color: white;
+  background-color: #dd4545;
+  border: 2px solid #923333;
+}
+
+button.red:hover,
+button.red.active {
+  background-color: #ff6262;
+  border-color: #c54444;
 }
 
 button#toggleButtonHolder {
@@ -168,7 +180,7 @@ div.popup {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   top: 10%;
   left: 10%;
   bottom: 10%;
@@ -181,6 +193,18 @@ div.popup {
 
 div.popup h2 {
   margin: 10px;
+  width: 100%;
+  text-align: center;
+}
+
+div.popup h2::after {
+  content: "";
+  display: block;
+  height: 3px;
+  width: 100%;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.3);
+  margin-top: 15px;
 }
 
 div.popup button.closePopup {
@@ -191,10 +215,10 @@ div.popup button.closePopup {
   font-size: 25px;
   width: 40px;
   height: 40px;
-  background-color: rgb(199, 44, 44);
   color: white;
-  padding: 5px;
+  background-color: #dd4545;
   border: none;
+  padding: 5px;
   cursor: pointer;
   border-radius: 5px;
 }
