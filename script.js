@@ -200,7 +200,7 @@
         spawnInterval *= 0.9;
       },
       purchaseCondition: () => {
-        return Math.fround(spawnInterval) > 400;
+        return spawnInterval > 400;
       },
     },
     upgradeMoney: {
@@ -222,7 +222,7 @@
         platformAngle += 0.02;
       },
       purchaseCondition: () => {
-        return Math.fround(platformAngle) < 0.6;
+        return platformAngle < 0.6;
       },
     },
     upgradeGravity: {
@@ -233,19 +233,22 @@
         gravity += 0.2;
       },
       purchaseCondition: () => {
-        return Math.fround(gravity) < 3;
+        return gravity < 3;
       },
     },
     upgradeBounciness: {
-      baseText: "+0.1 Bouncy & Hyperplier",
+      baseText:
+        () => bounciness < 1.2
+          ? "+0.1 Bouncy & Hyperplier"
+          : "+0.1 Hyperplier",
       upgradeCost: 500,
-      upgradeMulti: 1.8,
+      upgradeMulti: 1.75,
       whenPurchase: () => {
-        bounciness += 0.1;
+        if (bounciness < 1.2) bounciness += 0.1;
         moneyHyperplier += 0.1;
       },
       purchaseCondition: () => {
-        return Math.fround(bounciness) < 1.6;
+        return moneyHyperplier < 2;
       },
     },
   };
@@ -274,12 +277,17 @@
     bouncy_max: {
       name: "Super Bouncy",
       description: "Max out bounciness",
-      check: () => Math.fround(bounciness) >= 1.6,
+      check: () => bounciness >= 1.2,
     },
     big_earner: {
       name: "Big Earner",
       description: "Earn 100 points in a single impact",
       check: () => lastPointsEarned >= 100,
+    },
+    bouncy_max: {
+      name: "Hyper Earner",
+      description: "Max out hyperplier",
+      check: () => moneyHyperplier >= 2,
     },
   };
 
@@ -419,12 +427,16 @@
         value.element || (value.element = document.getElementById(key));
 
       let condition = value.purchaseCondition();
+      let baseText =
+        typeof value.baseText === "function"
+          ? value.baseText()
+          : value.baseText;
 
       if (condition === true) {
-        button.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
+        button.innerText = `${baseText} (Cost: ${value.upgradeCost})`;
         button.disabled = points < value.upgradeCost;
       } else {
-        button.innerText = `${value.baseText} (Unavailable)`;
+        button.innerText = `${baseText} (Unavailable)`;
         button.disabled = true;
       }
     }
@@ -487,7 +499,7 @@
     moneyMultiplier = dataXZ.d ?? 1;
     platformAngle = Math.min(0.6, dataXZ.e ?? 0.3);
     gravity = Math.min(3, dataXZ.f ?? 1);
-    bounciness = Math.min(1.6, Math.max(0.6, dataXZ.h ?? 0.6));
+    bounciness = Math.min(1.2, Math.max(0.6, dataXZ.h ?? 0.6));
     moneyHyperplier = Math.min(2, Math.max(1, dataXZ.i ?? 1));
     perks = dataXZ.j ?? [];
     completedAdvancements = dataXZ.k ?? [];
