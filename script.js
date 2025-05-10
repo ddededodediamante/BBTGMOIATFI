@@ -748,5 +748,6 @@
   );
 
   updateCanvasSize();
+  updateStuff();
   startBackgroundMusic();
 })();
