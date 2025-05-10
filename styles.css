@@ -2,7 +2,9 @@
   box-sizing: border-box;
 }
 
-p, h1, h2 {
+p,
+h1,
+h2 {
   margin: 0;
 }
 
@@ -30,6 +32,12 @@ body {
   height: 100vh;
 }
 
+div.inline {
+  display: flex;
+  flex-direction: row;
+  gap: inherit;
+}
+
 #information {
   position: absolute;
   top: 10px;
@@ -39,6 +47,49 @@ body {
 
 #information strong {
   font-size: 25px;
+}
+
+
+@media (max-width: 700px) {
+  #information {
+    font-size: 18px;
+  }
+  
+  #information strong {
+    font-size: 23px;
+  }
+}
+
+@media (max-width: 560px) {
+  #information {
+    font-size: 16px;
+  }
+  
+  #information strong {
+    font-size: 21px;
+  }
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+@keyframes disappear {
+  from {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 }
 
 #buttonHolder {
@@ -52,7 +103,7 @@ body {
   gap: 5px;
 }
 
-#buttonHolder button {
+button {
   color: #222;
   font-size: 14px;
   padding: 5px;
@@ -62,13 +113,33 @@ body {
   border: 2px solid #858585;
   border-radius: 5px;
   word-wrap: normal;
-  will-change: padding;
-  transition: padding 0.2s ease;
+  will-change: background-color, border-color, opacity;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-#buttonHolder button:hover {
-  padding-left: 10px;
-  padding-right: 10px;
+button:hover, button.active {
+  border-color: #b1b1b1;
+  background-color: #ffffff;
+}
+
+button#toggleButtonHolder {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-family: monospace;
+  font-size: 25px;
+  width: 40px;
+  height: 40px;
+}
+
+button#toggleButtonHolder img {
+  width: 25px;
+  height: 25px;
+}
+
+div.popup button {
+  font-size: 16px;
+  padding: 6px;
 }
 
 #gameCanvas {
@@ -89,7 +160,7 @@ div.line {
   height: 3px;
   width: 50%;
   border-radius: 3px;
-  background-color: rgba(255, 255, 255, 0.3)
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
 div.popup {
@@ -108,6 +179,10 @@ div.popup {
   border-radius: 10px;
 }
 
+div.popup h2 {
+  margin: 10px;
+}
+
 div.popup button.closePopup {
   position: absolute;
   top: 10px;
@@ -124,26 +199,8 @@ div.popup button.closePopup {
   border-radius: 5px;
 }
 
-div.popup button {
-  color: #222;
-  font-size: 16px;
-  padding: 6px;
-  margin: none;
-  cursor: pointer;
-  background-color: #dcdcdc;
-  border: 2px solid #858585;
-  border-radius: 5px;
-  will-change: padding;
-  transition: padding 0.2s ease;
-}
-
-div.popup button:hover {
-  padding-left: 10px;
-  padding-right: 10px;
-}
-
 :disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   pointer-events: none;
 }
 

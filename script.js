@@ -1,4 +1,56 @@
 (async () => {
+  const buttonHolder = document.getElementById("buttonHolder");
+  const informationDiv = document.getElementById("information");
+  const perksShop = document.getElementById("perksShop");
+  const settingsPopup = document.getElementById("settings");
+  const advancementsPopup = document.getElementById("advancements");
+  const perksGoldBalls = document.getElementById("perksGoldBalls");
+  const perksFastConveyor = document.getElementById("perksFastConveyor");
+  const perksSplitBalls = document.getElementById("perksSplitBalls");
+  const toggleMusicButton = document.getElementById("toggleMusicButton");
+  const backgroundMusic = document.getElementById("backgroundMusic");
+  const advancementsListDiv = document.getElementById("advancementList");
+  const openAdvancements = document.getElementById("openAdvancements");
+  const toggleButtonHolder = document.getElementById("toggleButtonHolder");
+
+  const SMALL_SCREEN_WIDTH = 750;
+  const ASPECT_RATIO = 800 / 600;
+  const MAX_WIDTH = 810;
+  const MAX_HEIGHT = 610;
+  const CATEGORY_UNCOLLECTED = 0b1;
+  const CATEGORY_COLLECTED = 0b10;
+  const CATEGORY_INVISIBLE_WALL = 0b100;
+
+  toggleButtonHolder.addEventListener("click", () => {
+    const isOpen = buttonHolder.style.display !== "none";
+
+    toggleButtonHolder.classList.toggle("active", !isOpen);
+
+    if (!isOpen) {
+      buttonHolder.style.display = "flex";
+      buttonHolder.style.animation = "appear 0.3s ease-out forwards";
+
+      buttonHolder.addEventListener(
+        "animationend",
+        () => {
+          buttonHolder.style.animation = "";
+        },
+        { once: true }
+      );
+    } else {
+      buttonHolder.style.animation = "disappear 0.3s ease-in forwards";
+
+      buttonHolder.addEventListener(
+        "animationend",
+        () => {
+          buttonHolder.style.display = "none";
+          buttonHolder.style.animation = "";
+        },
+        { once: true }
+      );
+    }
+  });
+
   const { Engine, Render, World, Bodies, Events, Body, Runner, Composite } =
     Matter;
 
@@ -9,14 +61,25 @@
   canvas.width = 800;
   canvas.height = 600;
 
-  const ASPECT_RATIO = 800 / 600;
-  const MAX_WIDTH = 810;
-  const MAX_HEIGHT = 610;
-  const CATEGORY_UNCOLLECTED = 0b1;
-  const CATEGORY_COLLECTED = 0b10;
-  const CATEGORY_INVISIBLE_WALL = 0b100;
+  function isGUIActive() {
+    return [perksShop, settingsPopup, advancementsPopup].some(
+      (pop) => pop.style.display === "flex"
+    );
+  }
 
   function updateCanvasSize() {
+    const guiActive = isGUIActive();
+
+    if (window.innerWidth <= SMALL_SCREEN_WIDTH) {
+      buttonHolder.style.top = "55px";
+      toggleButtonHolder.style.display = guiActive ? "none" : "block";
+      buttonHolder.style.display = "none";
+    } else {
+      buttonHolder.style.top = "10px";
+      toggleButtonHolder.style.display = "none";
+      buttonHolder.style.display = guiActive ? "none" : "flex";
+    }
+
     let width = Math.min(window.innerWidth, MAX_WIDTH);
     let height = Math.min(window.innerHeight, MAX_HEIGHT);
 
@@ -29,8 +92,6 @@
     canvas.style.width = width - 10 + "px";
     canvas.style.height = height - 10 + "px";
   }
-
-  updateCanvasSize();
 
   const render = Render.create({
     canvas,
@@ -184,7 +245,7 @@
         moneyHyperplier += 0.1;
       },
       purchaseCondition: () => {
-        return Math.fround(bounciness) < 1;
+        return Math.fround(bounciness) < 1.5;
       },
     },
   };
@@ -200,6 +261,11 @@
       description: "Reach 1000 points",
       check: () => points >= 1000,
     },
+    points_10000: {
+      name: "I Love Balls",
+      description: "Reach 10000 points",
+      check: () => points >= 10000,
+    },
     gold_balls: {
       name: "Golden Touch",
       description: "Buy the Gold Balls perk",
@@ -208,7 +274,7 @@
     bouncy_max: {
       name: "Super Bouncy",
       description: "Max out bounciness",
-      check: () => Math.fround(bounciness) >= 1,
+      check: () => Math.fround(bounciness) >= 1.5,
     },
     big_earner: {
       name: "Big Earner",
@@ -240,19 +306,6 @@
     setTimeout(() => popup.remove(), 4000);
   }
 
-  const buttonHolder = document.getElementById("buttonHolder");
-  const informationDiv = document.getElementById("information");
-  const perksShop = document.getElementById("perksShop");
-  const settingsPopup = document.getElementById("settings");
-  const advancementsPopup = document.getElementById("advancements");
-  const perksGoldBalls = document.getElementById("perksGoldBalls");
-  const perksFastConveyor = document.getElementById("perksFastConveyor");
-  const perksSplitBalls = document.getElementById("perksSplitBalls");
-  const toggleMusicButton = document.getElementById("toggleMusicButton");
-  const backgroundMusic = document.getElementById("backgroundMusic");
-  const advancementsListDiv = document.getElementById("advancementList");
-  const openAdvancements = document.getElementById("openAdvancements");
-
   const zx = (v) => btoa(JSON.stringify(v)).split("").reverse().join("");
   const xz = (v) => JSON.parse(atob(v.split("").reverse().join("")));
 
@@ -275,14 +328,16 @@
   }
 
   function showFloatingText(x, y, text, color) {
-    const { bounds, canvas } = render;
     const rect = canvas.getBoundingClientRect();
 
-    const scaleX = canvas.width / (bounds.max.x - bounds.min.x);
-    const scaleY = canvas.height / (bounds.max.y - bounds.min.y);
+    const worldW = render.bounds.max.x - render.bounds.min.x;
+    const worldH = render.bounds.max.y - render.bounds.min.y;
 
-    const screenX = rect.left + (x - bounds.min.x) * scaleX;
-    const screenY = rect.top + (y - bounds.min.y) * scaleY;
+    const scaleX = rect.width / worldW;
+    const scaleY = rect.height / worldH;
+
+    const screenX = rect.left + (x - render.bounds.min.x) * scaleX;
+    const screenY = rect.top + (y - render.bounds.min.y) * scaleY;
 
     const floatElem = document.createElement("div");
     floatElem.className = "floating-text";
@@ -297,9 +352,7 @@
       floatElem.style.opacity = 0;
     });
 
-    setTimeout(() => {
-      floatElem.remove();
-    }, 1000);
+    setTimeout(() => floatElem.remove(), 1000);
   }
 
   function spawnObject({ x, y, size } = {}) {
@@ -581,20 +634,21 @@
   document.getElementById("openPerksShop").addEventListener("click", () => {
     perksShop.style.display = "flex";
     buttonHolder.style.display = "none";
+    toggleButtonHolder.style.display = "none";
   });
-
   document.getElementById("openSettings").addEventListener("click", () => {
     settingsPopup.style.display = "flex";
     buttonHolder.style.display = "none";
+    toggleButtonHolder.style.display = "none";
   });
 
-  document.querySelectorAll("button.closePopup").forEach((element) => {
-    element.addEventListener("click", () => {
-      document.querySelectorAll("div.popup").forEach((popup) => {
-        popup.style.display = "none";
-      });
+  document.querySelectorAll("button.closePopup").forEach((el) => {
+    el.addEventListener("click", () => {
+      document
+        .querySelectorAll("div.popup")
+        .forEach((p) => (p.style.display = "none"));
 
-      buttonHolder.style.display = "flex";
+      updateCanvasSize();
     });
   });
 
@@ -652,6 +706,10 @@
   });
 
   openAdvancements.addEventListener("click", () => {
+    advancementsPopup.style.display = "flex";
+    buttonHolder.style.display = "none";
+    toggleButtonHolder.style.display = "none";
+
     advancementsListDiv.innerHTML = "";
 
     for (const id in advancementsData) {
@@ -665,9 +723,6 @@
 
       advancementsListDiv.appendChild(element);
     }
-
-    advancementsPopup.style.display = "flex";
-    buttonHolder.style.display = "none";
   });
 
   window.addEventListener(
@@ -680,5 +735,6 @@
     { once: true }
   );
 
+  updateCanvasSize();
   startBackgroundMusic();
 })();
