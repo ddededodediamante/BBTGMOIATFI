@@ -614,29 +614,40 @@
   });
 
   let lastSpawn = Date.now();
+  let lastFrame = Date.now();
+  const maxFps
+   = 60;
+  const frameDuration = 1000 / maxFps; 
 
   (function gameLoop() {
     const now = Date.now();
-    if (now - lastSpawn > spawnInterval) {
-      spawnObject();
-      lastSpawn = now;
-    }
+    const delta = now - lastFrame;
 
-    const canvasWidth = canvas.width;
-    for (const body of Composite.allBodies(world)) {
-      if (body.label === "fallingObject" && body.collected) {
-        const radius = body.circleRadius || 0;
-        if (
-          body.position.x + radius < 0 ||
-          body.position.x - radius > canvasWidth
-        ) {
-          World.remove(world, body);
+    if (delta >= frameDuration) {
+      lastFrame = now - (delta % frameDuration);
+
+      if (now - lastSpawn > spawnInterval) {
+        spawnObject();
+        lastSpawn = now;
+      }
+
+      const canvasWidth = canvas.width;
+      for (const body of Composite.allBodies(world)) {
+        if (body.label === "fallingObject" && body.collected) {
+          const radius = body.circleRadius || 0;
+          if (
+            body.position.x + radius < 0 ||
+            body.position.x - radius > canvasWidth
+          ) {
+            World.remove(world, body);
+          }
         }
       }
     }
 
     requestAnimationFrame(gameLoop);
   })();
+
 
   setInterval(saveGame, 5000);
   window.addEventListener("resize", updateCanvasSize);
