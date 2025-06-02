@@ -705,17 +705,6 @@
     }
   });
 
-  function startBackgroundMusic() {
-    backgroundMusic.volume = 0.4;
-
-    if (localStorage.getItem("music") === "false") {
-      toggleMusicButton.textContent = "Turn Music On";
-    } else {
-      backgroundMusic.play().catch(() => {});
-      toggleMusicButton.textContent = "Turn Music Off";
-    }
-  }
-
   toggleMusicButton.addEventListener("click", () => {
     if (backgroundMusic.paused) {
       backgroundMusic.play();
@@ -760,5 +749,10 @@
 
   updateCanvasSize();
   updateStuff();
-  startBackgroundMusic();
+
+  if (localStorage.getItem("music") === "false") {
+    toggleMusicButton.textContent = "Turn Music On";
+  } else {
+    toggleMusicButton.textContent = "Turn Music Off";
+  }
 })();
