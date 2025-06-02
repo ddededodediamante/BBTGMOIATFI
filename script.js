@@ -741,6 +741,7 @@
     "click",
     () => {
       if (localStorage.getItem("music") === "true" && backgroundMusic.paused) {
+        backgroundMusic.volume = 0.4;
         backgroundMusic.play().catch(() => {});
       }
     },
