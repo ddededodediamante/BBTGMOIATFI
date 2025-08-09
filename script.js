@@ -8,6 +8,9 @@
   const perksFastConveyor = document.getElementById("perksFastConveyor");
   const perksSplitBalls = document.getElementById("perksSplitBalls");
   const toggleMusicButton = document.getElementById("toggleMusicButton");
+  const toggleSoundEffectsButton = document.getElementById(
+    "toggleSoundEffectsButton"
+  );
   const backgroundMusic = document.getElementById("backgroundMusic");
   const advancementsListDiv = document.getElementById("advancementList");
   const openAdvancements = document.getElementById("openAdvancements");
@@ -119,7 +122,8 @@
     bounciness = 0.6,
     perks = [],
     completedAdvancements = [],
-    lastPointsEarned = 0;
+    lastPointsEarned = 0,
+    soundEffectsEnabled = true;
 
   engine.world.gravity.y = gravity;
 
@@ -486,6 +490,12 @@
       if (value.whenPurchase) value.whenPurchase();
 
       updateStuff();
+
+      if (soundEffectsEnabled) {
+        const audio = new Audio("./sounds/Hint.wav");
+        audio.volume = 0.6;
+        audio.play().catch(() => {});
+      }
     });
     buttonHolder.appendChild(newButton);
     value.element = newButton;
@@ -717,6 +727,18 @@
     }
   });
 
+  toggleSoundEffectsButton.addEventListener("click", () => {
+    if (!soundEffectsEnabled) {
+      localStorage.setItem("effects", "true");
+      toggleSoundEffectsButton.textContent = "Disable Sound Effects";
+    } else {
+      localStorage.setItem("effects", "false");
+      toggleSoundEffectsButton.textContent = "Enable Sound Effects";
+    }
+
+    soundEffectsEnabled = !soundEffectsEnabled;
+  });
+
   openAdvancements.addEventListener("click", () => {
     advancementsPopup.style.display = "flex";
     buttonHolder.style.display = "none";
@@ -751,9 +773,12 @@
   updateCanvasSize();
   updateStuff();
 
-  if (localStorage.getItem("music") === "false") {
-    toggleMusicButton.textContent = "Turn Music On";
-  } else {
-    toggleMusicButton.textContent = "Turn Music Off";
-  }
+  toggleMusicButton.textContent =
+    localStorage.getItem("music") === "false"
+      ? "Turn Music On"
+      : "Turn Music Off";
+  soundEffectsEnabled = localStorage.getItem("effects") !== "false";
+  toggleSoundEffectsButton.textContent = soundEffectsEnabled
+    ? "Disable Sound Effects"
+    : "Enable Sound Effects";
 })();
