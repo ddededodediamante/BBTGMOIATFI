@@ -556,7 +556,7 @@
   if (savedData !== null) {
     try {
       const dataXZ = xz(savedData);
-      spawnInterval = Math.max(370, dataXZ.a ?? DEFAULTS.spawnInterval);
+      spawnInterval = Math.max(37, dataXZ.a ?? DEFAULTS.spawnInterval);
       points = dataXZ.c ?? 0;
       moneyMultiplier = dataXZ.d ?? DEFAULTS.moneyMultiplier;
       platformAngle = Math.min(0.6, dataXZ.e ?? DEFAULTS.platformAngle);
