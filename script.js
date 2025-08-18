@@ -889,19 +889,12 @@
   const PRESTIGE_THRESHOLD = 10000;
 
   function renderPrestigePopup() {
-    prestigePopup.innerHTML = "";
-    const close = document.createElement("button");
-    close.className = "closePopup";
-    close.textContent = "X";
-    close.addEventListener("click", () => {
-      prestigePopup.style.display = "none";
-      updateCanvasSize();
-    });
-    prestigePopup.appendChild(close);
+    const content = document.getElementById("prestigePopupContent");
+    content.innerHTML = "";
 
     const h = document.createElement("h2");
     h.textContent = "Prestige";
-    prestigePopup.appendChild(h);
+    content.appendChild(h);
 
     const potentialGain = Math.floor(points / PRESTIGE_THRESHOLD);
 
@@ -913,7 +906,7 @@
     <p>Prestiging will reset most normal progress, but your prestige shop upgrades are permanent.</p>
     `;
     info.style.marginBottom = "10px";
-    prestigePopup.appendChild(info);
+    content.appendChild(info);
 
     const prestigeNowBtn = document.createElement("button");
     prestigeNowBtn.textContent =
@@ -971,7 +964,7 @@
       alert(`Prestiged! You gained ${potentialGain} prestige point(s).`);
     });
 
-    prestigePopup.appendChild(prestigeNowBtn);
+    content.appendChild(prestigeNowBtn);
 
     const shopContainer = document.createElement("div");
     shopContainer.className = "prestigeShopDiv";
@@ -1030,6 +1023,6 @@
       )}%</div>`;
     shopContainer.appendChild(current);
 
-    prestigePopup.appendChild(shopContainer);
+    content.appendChild(shopContainer);
   }
 })();

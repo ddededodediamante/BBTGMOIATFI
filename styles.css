@@ -25,6 +25,7 @@ body {
   margin: 0;
   overflow: hidden;
   background: #222;
+  background: linear-gradient(180deg, #222222 0%, #181818 100%);
   color: #fff;
   font-family: sans-serif;
   position: relative;
