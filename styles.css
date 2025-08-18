@@ -254,6 +254,22 @@ div.popup button.closePopup {
   }
 }
 
+div.advancement-popup {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #dcdcdc;
+  color: #222;
+  font-size: 16px;
+  padding: 6px;
+  border: 2px solid #858585;
+  border-radius: 5px;
+  box-shadow: 0 0 10px #000;
+  z-index: 9999;
+  animation: advancement-fade 4s ease forwards;
+  pointer-events: none;
+}
+
 div.advancement-list {
   padding: 6px;
   margin-bottom: 4px;
