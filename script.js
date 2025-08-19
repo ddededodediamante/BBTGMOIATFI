@@ -901,7 +901,6 @@
     const info = document.createElement("div");
     info.innerHTML = `
     <p>Total prestige level: <strong>${prestigeLevel}</strong></p>
-    <br>
     <p>Prestiging grants <strong>${potentialGain}</strong> prestige point(s) (1 per ${PRESTIGE_THRESHOLD} points).</p>
     <p>Prestiging will reset most normal progress, but your prestige shop upgrades are permanent.</p>
     `;
@@ -1013,14 +1012,16 @@
     shopContainer.appendChild(shopList);
 
     const current = document.createElement("div");
-    current.innerHTML = `<h3>Current Prestige Upgrades</h3>
-      <div>Money Boost: +${Math.round(
-        (prestigeUpgrades.moneyMult || 0) * 100
-      )}%</div>
-      <div>Start Points: ${prestigeUpgrades.startPoints || 0}</div>
-      <div>Gold Chance Bonus: +${Math.round(
-        (prestigeUpgrades.goldChance || 0) * 100
-      )}%</div>`;
+    current.innerHTML = `
+    <h3>Current Prestige Upgrades</h3>
+    <p>Money Boost: +${Math.round(
+      (prestigeUpgrades.moneyMult || 0) * 100
+    )}%</p>
+    <p>Start Points: ${prestigeUpgrades.startPoints || 0}</div>
+    <p>Gold Chance Bonus: +${Math.round(
+      (prestigeUpgrades.goldChance || 0) * 100
+    )}%</p>
+    `;
     shopContainer.appendChild(current);
 
     content.appendChild(shopContainer);

@@ -50,10 +50,17 @@
 
         <h2>Settings</h2>
 
-        <button id="toggleMusicButton">Toggle Music</button>
+        <div>
+            <button id="toggleMusicButton">Toggle Music</button>
+            <button id="toggleSoundEffectsButton">Toggle SoundEffects</button>
+        </div>
+
         <p>"Disco con Tutti" Kevin MacLeod (incompetech.com)<br>Licensed under Creative Commons: By <a
                 href="http://creativecommons.org/licenses/by/4.0/">Attribution 4.0 License</a></p>
-        <button id="toggleSoundEffectsButton">Toggle Sound Effects</button>
+
+        <button onclick="window.dispatchEvent(new Event('resize'))">
+            Force Resize Canvas
+        </button>
 
         <br>
 
