@@ -559,8 +559,11 @@
       spawnInterval = Math.max(37, dataXZ.a ?? DEFAULTS.spawnInterval);
       points = dataXZ.c ?? 0;
       moneyMultiplier = dataXZ.d ?? DEFAULTS.moneyMultiplier;
-      platformAngle = Math.min(0.6, dataXZ.e ?? DEFAULTS.platformAngle);
-      gravity = Math.min(3, dataXZ.f ?? DEFAULTS.gravity);
+      platformAngle = Math.min(
+        Math.max(DEFAULTS.platformAngle, dataXZ.e ?? DEFAULTS.platformAngle),
+        0.8
+      );
+      gravity = Math.min(3, Math.max(1, dataXZ.f ?? DEFAULTS.gravity));
       bounciness = Math.min(
         1.1,
         Math.max(0.6, dataXZ.h ?? DEFAULTS.bounciness)
@@ -1014,9 +1017,7 @@
     const current = document.createElement("div");
     current.innerHTML = `
     <h3>Current Prestige Upgrades</h3>
-    <p>Money Boost: +${Math.round(
-      (prestigeUpgrades.moneyMult || 0) * 100
-    )}%</p>
+    <p>Money Boost: +${Math.round((prestigeUpgrades.moneyMult || 0) * 100)}%</p>
     <p>Start Points: ${prestigeUpgrades.startPoints || 0}</div>
     <p>Gold Chance Bonus: +${Math.round(
       (prestigeUpgrades.goldChance || 0) * 100
