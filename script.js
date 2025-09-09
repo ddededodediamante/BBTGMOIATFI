@@ -840,6 +840,9 @@
     }
   });
 
+  if (localStorage.getItem("music") === null) localStorage.setItem("music", "true");
+  if (localStorage.getItem("effects") === null) localStorage.setItem("effects", "true");
+
   window.addEventListener(
     "click",
     () => {
