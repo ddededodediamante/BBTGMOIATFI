@@ -72,6 +72,14 @@ div.inline {
   #information strong {
     font-size: 21px;
   }
+
+  div.popup {
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    border-radius: 0 !important;
+  }
 }
 
 @keyframes appear {
@@ -194,7 +202,7 @@ div.popup {
   padding: 5px;
   gap: 5px;
   border-radius: 10px;
-  overflow-y: auto;  
+  overflow-y: auto;
   overflow-x: hidden;
 }
 
@@ -322,5 +330,5 @@ div.prestigeShopDiv {
 
 html {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.3) #00000000
+  scrollbar-color: rgba(255, 255, 255, 0.3) #00000000;
 }

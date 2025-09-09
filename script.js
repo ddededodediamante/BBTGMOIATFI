@@ -84,17 +84,20 @@
       buttonHolder.style.display = guiActive ? "none" : "flex";
     }
 
-    let width = Math.min(window.innerWidth, MAX_WIDTH);
-    let height = Math.min(window.innerHeight, MAX_HEIGHT);
+    // Run sizing in the next frame so layout is updated
+    requestAnimationFrame(() => {
+      let width = Math.min(document.documentElement.clientWidth, MAX_WIDTH);
+      let height = Math.min(document.documentElement.clientHeight, MAX_HEIGHT);
 
-    if (width / height > ASPECT_RATIO) {
-      width = height * ASPECT_RATIO;
-    } else {
-      height = width / ASPECT_RATIO;
-    }
+      if (width / height > ASPECT_RATIO) {
+        width = height * ASPECT_RATIO;
+      } else {
+        height = width / ASPECT_RATIO;
+      }
 
-    canvas.style.width = width - 10 + "px";
-    canvas.style.height = height - 10 + "px";
+      canvas.style.width = width - 10 + "px";
+      canvas.style.height = height - 10 + "px";
+    });
   }
 
   const render = Render.create({
@@ -299,11 +302,6 @@
       description: "Reach 10000 points",
       check: () => points >= 10000,
     },
-    gold_balls: {
-      name: "Golden Touch",
-      description: "Buy the Gold Balls perk",
-      check: () => perks.includes("goldBalls"),
-    },
     bouncy_max: {
       name: "Super Bouncy",
       description: "Max out bounciness",
@@ -311,13 +309,23 @@
     },
     big_earner: {
       name: "Big Earner",
-      description: "Earn 100 points in a single impact",
+      description: "Earn 100 or more points in a single impact",
       check: () => lastPointsEarned >= 100,
+    },
+    bigger_earner: {
+      name: "Bigger Earner",
+      description: "Earn 986 or more points in a single impact",
+      check: () => lastPointsEarned >= 986,
     },
     hyper_earner: {
       name: "Hyper Earner",
       description: "Max out hyperplier",
       check: () => moneyHyperplier >= 2,
+    },
+    gold_balls: {
+      name: "Golden Touch",
+      description: "Buy the Gold Balls perk",
+      check: () => perks.includes("goldBalls"),
     },
     golden_divorce: {
       name: "Golden Divorce",
