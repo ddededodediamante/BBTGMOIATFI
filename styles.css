@@ -167,6 +167,17 @@ div.popup button {
   padding: 6px;
 }
 
+input {
+  color: #222;
+  font-size: 14px;
+  padding: 5px;
+  margin: none;
+  background-color: #dcdcdc;
+  border: 2px solid #858585;
+  border-radius: 5px;
+  text-wrap: nowrap;
+}
+
 #gameCanvas {
   border: 5px solid #333;
   border-radius: 10px;

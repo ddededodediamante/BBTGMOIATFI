@@ -26,11 +26,9 @@
 </head>
 
 <body>
-    <audio id="backgroundMusic" style="display: none;" loop>
-        <source src="/music/Disco con Tutti.mp3" type="audio/mp3">
-    </audio>
+    <audio id="backgroundMusic" style="display: none;" loop src="/music/Disco con Tutti.mp3"></audio>
 
-    <div id="information">???</div>
+    <div id="information">what</div>
 
     <div class="popup" id="perksShop" style="display: none">
         <button class="closePopup">X</button>
@@ -53,6 +51,16 @@
         <div>
             <button id="toggleMusicButton">Toggle Music</button>
             <button id="toggleSoundEffectsButton">Toggle SoundEffects</button>
+        </div>
+
+        <div>
+            <datalist id="musicPaths">
+                <option value="Disco con Tutti.mp3">
+                <option value="Meadow Thoughts.ogg">
+                <option value="Summer Park.ogg"></option>
+            </datalist>
+            <input type="url" placeholder="Music URL" list="musicPaths" id="musicUrlInput">
+            <button id="setMusicUrlButton">Set Music URL</button>
         </div>
 
         <p>"Disco con Tutti" Kevin MacLeod (incompetech.com)<br>Licensed under Creative Commons: By <a

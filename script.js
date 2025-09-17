@@ -9,6 +9,7 @@
   const perksFastConveyor = document.getElementById("perksFastConveyor");
   const perksSplitBalls = document.getElementById("perksSplitBalls");
   const toggleMusicButton = document.getElementById("toggleMusicButton");
+  const setMusicUrlButton = document.getElementById("setMusicUrlButton");
   const toggleSoundEffectsButton = document.getElementById(
     "toggleSoundEffectsButton"
   );
@@ -808,6 +809,26 @@
     }
   });
 
+  setMusicUrlButton.addEventListener("click", () => {
+    const musicUrlInput = document.getElementById("musicUrlInput").value;
+
+    let url;
+    try {
+      url = new URL(musicUrlInput);
+    } catch (_) {
+      try {
+        url = new URL("/music/" + musicUrlInput, window.location.href);
+      } catch (_) {
+        url = "/music/Disco con Tutti.mp3";
+      }
+    }
+
+    localStorage.setItem("musicUrl", url);
+    backgroundMusic.src = url;
+    backgroundMusic.load();
+    backgroundMusic.play();
+  });
+
   toggleSoundEffectsButton.addEventListener("click", () => {
     if (!soundEffectsEnabled) {
       localStorage.setItem("effects", "true");
@@ -840,12 +861,23 @@
     }
   });
 
-  if (localStorage.getItem("music") === null) localStorage.setItem("music", "true");
-  if (localStorage.getItem("effects") === null) localStorage.setItem("effects", "true");
+  if (localStorage.getItem("music") === null)
+    localStorage.setItem("music", "true");
+  if (localStorage.getItem("effects") === null)
+    localStorage.setItem("effects", "true");
+
+  backgroundMusic.onerror = (ev) => {
+    ev.target.src = "/music/Disco con Tutti.mp3";
+    localStorage.setItem("musicUrl", "/music/Disco con Tutti.mp3");
+    ev.target.load();
+    ev.target.play();
+  };
 
   window.addEventListener(
     "click",
     () => {
+      if (localStorage.getItem("musicUrl"))
+        backgroundMusic.src = localStorage.getItem("musicUrl");
       if (localStorage.getItem("music") === "true" && backgroundMusic.paused) {
         backgroundMusic.volume = 0.4;
         backgroundMusic.play().catch(() => {});
