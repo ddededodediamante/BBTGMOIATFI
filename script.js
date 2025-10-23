@@ -595,8 +595,6 @@
           }
         }
       }
-
-      if (points > 2e104) {window.deleteAllMyData = true;localStorage.removeItem('gameData');window.location.reload();return;}
     } catch (e) {
       console.warn("Failed to read saved gameData:", e);
     }
