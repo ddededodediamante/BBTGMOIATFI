@@ -1,4 +1,6 @@
 (async () => {
+  /* Variables */
+
   const buttonHolder = document.getElementById("buttonHolder");
   const informationDiv = document.getElementById("information");
   const perksShop = document.getElementById("perksShop");
@@ -26,35 +28,7 @@
   const CATEGORY_COLLECTED = 0b10;
   const CATEGORY_INVISIBLE_WALL = 0b100;
 
-  toggleButtonHolder.addEventListener("click", () => {
-    const isOpen = buttonHolder.style.display !== "none";
-
-    toggleButtonHolder.classList.toggle("active", !isOpen);
-
-    if (!isOpen) {
-      buttonHolder.style.display = "flex";
-      buttonHolder.style.animation = "appear 0.3s ease-out forwards";
-
-      buttonHolder.addEventListener(
-        "animationend",
-        () => {
-          buttonHolder.style.animation = "";
-        },
-        { once: true }
-      );
-    } else {
-      buttonHolder.style.animation = "disappear 0.3s ease-in forwards";
-
-      buttonHolder.addEventListener(
-        "animationend",
-        () => {
-          buttonHolder.style.display = "none";
-          buttonHolder.style.animation = "";
-        },
-        { once: true }
-      );
-    }
-  });
+  /* Engine */
 
   const { Engine, Render, World, Bodies, Events, Body, Runner, Composite } =
     Matter;
@@ -386,6 +360,32 @@
       })
     );
   }
+
+  (function () {
+    const originalSetItem = Storage.prototype.setItem;
+    let savingGame = false; 
+
+    Object.defineProperty(Storage.prototype, "setItem", {
+      value: function (key, value) {
+        if (key === "gameData" && !savingGame) {
+          savingGame = true;
+          try {
+            saveGame();
+          } catch (err) {
+            console.error("Failed to save game:", err);
+          } finally {
+            savingGame = false;
+          }
+          return;
+        }
+
+        return originalSetItem.call(this, key, value);
+      },
+      writable: false,
+      configurable: false,
+      enumerable: false,
+    });
+  })();
 
   function showFloatingText(x, y, text, color) {
     const rect = canvas.getBoundingClientRect();
@@ -739,6 +739,36 @@
   window.addEventListener("resize", updateCanvasSize);
 
   /* Perks Shop & Settings */
+
+  toggleButtonHolder.addEventListener("click", () => {
+    const isOpen = buttonHolder.style.display !== "none";
+
+    toggleButtonHolder.classList.toggle("active", !isOpen);
+
+    if (!isOpen) {
+      buttonHolder.style.display = "flex";
+      buttonHolder.style.animation = "appear 0.3s ease-out forwards";
+
+      buttonHolder.addEventListener(
+        "animationend",
+        () => {
+          buttonHolder.style.animation = "";
+        },
+        { once: true }
+      );
+    } else {
+      buttonHolder.style.animation = "disappear 0.3s ease-in forwards";
+
+      buttonHolder.addEventListener(
+        "animationend",
+        () => {
+          buttonHolder.style.display = "none";
+          buttonHolder.style.animation = "";
+        },
+        { once: true }
+      );
+    }
+  });
 
   document.getElementById("openPerksShop").addEventListener("click", () => {
     perksShop.style.display = "flex";
