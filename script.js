@@ -563,8 +563,7 @@
 
   const savedData = localStorage.getItem("gameData");
   if (savedData !== null) {
-    if (points > 2e104) {window.deleteAllMyData = true;localStorage.removeItem('gameData');window.location.reload();}
-    else {try {
+    try {
       const dataXZ = xz(savedData);
       spawnInterval = Math.max(37, dataXZ.a ?? DEFAULTS.spawnInterval);
       points = dataXZ.c ?? 0;
@@ -596,9 +595,11 @@
           }
         }
       }
+
+      if (points > 2e104) {window.deleteAllMyData = true;localStorage.removeItem('gameData');window.location.reload();return;}
     } catch (e) {
       console.warn("Failed to read saved gameData:", e);
-    }}
+    }
   }
 
   window.addEventListener("beforeunload", () => {
