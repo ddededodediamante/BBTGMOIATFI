@@ -854,6 +854,7 @@
     }
 
     localStorage.setItem("musicUrl", url);
+    backgroundMusic.pause();
     backgroundMusic.src = url;
     backgroundMusic.load();
     backgroundMusic.play();
@@ -897,6 +898,7 @@
     localStorage.setItem("effects", "true");
 
   backgroundMusic.onerror = (ev) => {
+    ev.target.pause();
     ev.target.src = "/music/Disco con Tutti.mp3";
     localStorage.setItem("musicUrl", "/music/Disco con Tutti.mp3");
     ev.target.load();
