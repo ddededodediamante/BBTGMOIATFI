@@ -97,6 +97,7 @@
     moneyMultiplier: 1,
     bounciness: 0.6,
     moneyHyperplier: 1,
+    maxEntropy: 9,
   };
 
   var platformWidth = 550,
@@ -121,6 +122,9 @@
       startPoints: 0,
       goldChance: 0,
     };
+
+  var entropy = 0;
+  var maxEntropy = DEFAULTS.maxEntropy;
 
   engine.world.gravity.y = gravity;
 
@@ -256,6 +260,17 @@
         return moneyHyperplier < 2;
       },
     },
+    upgradeEntropy: {
+      baseText: "Increment Entropy Capacity",
+      upgradeCost: 200,
+      upgradeMulti: 1.4,
+      whenPurchase: () => {
+        maxEntropy += 1;
+      },
+      purchaseCondition: () => {
+        return true;
+      },
+    },
   };
 
   const INITIAL_BUTTON_COSTS = {};
@@ -289,8 +304,8 @@
     },
     bigger_earner: {
       name: "Bigger Earner",
-      description: "Earn 986 or more points in a single impact",
-      check: () => lastPointsEarned >= 986,
+      description: "Earn 586 or more points in a single impact",
+      check: () => lastPointsEarned >= 586,
     },
     hyper_earner: {
       name: "Hyper Earner",
@@ -307,6 +322,11 @@
       description: "A golden ball has split upon impact",
       check: () => goldenDivorce,
     },
+    start_over: {
+      name: "Start Over",
+      description: "Obtain 1 or more prestige points",
+      check: () => prestigePoints >= 1,
+    },
   };
 
   function checkAdvancements() {
@@ -315,6 +335,7 @@
         completedAdvancements.push(id);
         const { name, description } = advancementsData[id];
         showAdvancementPopup(name, description);
+        renderAdvancementsPopup();
       }
     }
   }
@@ -357,13 +378,14 @@
         p: prestigePoints,
         q: prestigeLevel,
         r: prestigeUpgrades,
+        s: maxEntropy
       })
     );
   }
 
   (function () {
     const originalSetItem = Storage.prototype.setItem;
-    let savingGame = false; 
+    let savingGame = false;
 
     Object.defineProperty(Storage.prototype, "setItem", {
       value: function (key, value) {
@@ -415,7 +437,15 @@
     setTimeout(() => floatElem.remove(), 1000);
   }
 
+  function addEntropy(amount) {
+    entropy = Math.max(0, Math.min(maxEntropy, entropy + amount));
+    updateStuff({ onlyInformation: true });
+  }
+
   function spawnObject({ x, y, size } = {}) {
+    if (entropy >= maxEntropy) return;
+    addEntropy(1);
+
     const baseGoldChance = perks.includes("goldBalls") ? 0.1 : 0;
     const goldChance = baseGoldChance + (prestigeUpgrades.goldChance || 0);
     const isGold = Math.random() < goldChance;
@@ -460,7 +490,7 @@
     return obj;
   }
 
-  function updateStuff() {
+  function updateStuff({ onlyInformation = false } = {}) {
     const information = [
       `<strong>Points: ${points}</strong>`,
       prestigeLevel !== 0 &&
@@ -472,9 +502,12 @@
         moneyHyperplier !== 1 ? ` (x${moneyHyperplier.toFixed(2)})` : ""
       }`,
       `Gravity: x${gravity.toFixed(2)}`,
+      `<p class="${entropy / maxEntropy > 0.8 ? 'red' : ''}">Entropy: ${entropy} / ${maxEntropy}</p>`,
       ,
     ].filter(Boolean);
     informationDiv.innerHTML = information.join("<br>");
+
+    if (onlyInformation) return;
 
     Body.setAngle(leftPlatform, platformAngle);
     Body.setAngle(rightPlatform, -platformAngle);
@@ -586,6 +619,7 @@
       prestigePoints = dataXZ.p ?? 0;
       prestigeLevel = dataXZ.q ?? 0;
       prestigeUpgrades = dataXZ.r ?? prestigeUpgrades;
+      maxEntropy = Math.max(dataXZ.s ?? DEFAULTS.maxEntropy, DEFAULTS.maxEntropy);
 
       if (dataXZ.g) {
         for (const key in dataXZ.g) {
@@ -633,7 +667,11 @@
         object = pair.bodyA;
 
       if (object && !object.collected) {
-        if (perks.includes("splitBalls") && Math.random() < 9 / 100) {
+        if (
+          perks.includes("splitBalls") &&
+          Math.random() < 9 / 100 &&
+          entropy < maxEntropy - 1
+        ) {
           goldenDivorce = !!object.isGold;
 
           const originalSize = object.originSize;
@@ -669,6 +707,7 @@
             "#bd8d4f"
           );
 
+          addEntropy(-1);
           World.remove(world, object);
           continue;
         }
@@ -713,7 +752,7 @@
     if (delta >= frameDuration) {
       lastFrame = now - (delta % frameDuration);
 
-      if (now - lastSpawn > spawnInterval) {
+      if (now - lastSpawn > spawnInterval && entropy < maxEntropy) {
         spawnObject();
         lastSpawn = now;
       }
@@ -726,6 +765,7 @@
             body.position.x + radius < 0 ||
             body.position.x - radius > canvasWidth
           ) {
+            addEntropy(-1);
             World.remove(world, body);
           }
         }
@@ -872,11 +912,7 @@
     soundEffectsEnabled = !soundEffectsEnabled;
   });
 
-  openAdvancements.addEventListener("click", () => {
-    advancementsPopup.style.display = "flex";
-    buttonHolder.style.display = "none";
-    toggleButtonHolder.style.display = "none";
-
+  function renderAdvancementsPopup() {
     advancementsListDiv.innerHTML = "";
 
     for (const id in advancementsData) {
@@ -890,6 +926,14 @@
 
       advancementsListDiv.appendChild(element);
     }
+  }
+
+  openAdvancements.addEventListener("click", () => {
+    advancementsPopup.style.display = "flex";
+    buttonHolder.style.display = "none";
+    toggleButtonHolder.style.display = "none";
+
+    renderAdvancementsPopup();
   });
 
   if (localStorage.getItem("music") === null)
@@ -1003,12 +1047,15 @@
       prestigeLevel += potentialGain;
 
       points = 0;
+      lastPointsEarned = 0;
+      entropy = 0;
       spawnInterval = DEFAULTS.spawnInterval;
       platformAngle = DEFAULTS.platformAngle;
       gravity = DEFAULTS.gravity;
       moneyMultiplier = DEFAULTS.moneyMultiplier;
       bounciness = DEFAULTS.bounciness;
       moneyHyperplier = DEFAULTS.moneyHyperplier;
+      maxEntropy = DEFAULTS.maxEntropy;
       perks = [];
 
       for (const k in buttons) {

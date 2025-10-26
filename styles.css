@@ -82,6 +82,14 @@ div.inline {
   }
 }
 
+#information p {
+  margin: 0;
+}
+
+p.red {
+  color: #ff4343;
+}
+
 @keyframes appear {
   from {
     opacity: 0;
