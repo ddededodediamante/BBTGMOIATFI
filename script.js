@@ -726,6 +726,7 @@
         lastPointsEarned = finalEarn;
         points += finalEarn;
 
+        addEntropy(-1);
         updateStuff();
 
         showFloatingText(object.position.x, object.position.y, "+" + finalEarn);
