@@ -229,7 +229,7 @@
         platformAngle += 0.02;
       },
       purchaseCondition: () => {
-        return platformAngle < 0.8;
+        return platformAngle < 0.85;
       },
     },
     upgradeGravity: {
@@ -447,7 +447,7 @@
       : { fillStyle: color };
 
     const obj = Bodies.circle(_x, _y, _size / 2, {
-      restitution: bounciness,
+      restitution: bounciness * 0.95,
       label: "fallingObject",
       render: myRender,
       collisionFilter: {
@@ -577,7 +577,7 @@
       moneyMultiplier = dataXZ.d ?? DEFAULTS.moneyMultiplier;
       platformAngle = Math.min(
         Math.max(DEFAULTS.platformAngle, dataXZ.e ?? DEFAULTS.platformAngle),
-        0.8
+        0.85
       );
       gravity = Math.min(3, Math.max(1, dataXZ.f ?? DEFAULTS.gravity));
       bounciness = Math.min(
@@ -865,11 +865,22 @@
       }
     }
 
+    const wasPaused = backgroundMusic.paused;
+
     localStorage.setItem("musicUrl", url);
+
     backgroundMusic.pause();
     backgroundMusic.src = url;
     backgroundMusic.load();
-    backgroundMusic.play();
+
+    backgroundMusic.addEventListener(
+      "loadeddata",
+      () => {
+        if (!wasPaused) backgroundMusic.play().catch(() => { });
+        else backgroundMusic.pause();
+      },
+      { once: true }
+    );
   });
 
   toggleSoundEffectsButton.addEventListener("click", () => {
