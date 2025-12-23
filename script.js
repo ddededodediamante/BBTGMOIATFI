@@ -1,29 +1,29 @@
 (async () => {
   /* Variables */
 
-  const buttonHolder = document.getElementById("buttonHolder");
-  const informationDiv = document.getElementById("information");
-  const perksShop = document.getElementById("perksShop");
-  const settingsPopup = document.getElementById("settings");
-  const prestigePopup = document.getElementById("prestige");
-  const advancementsPopup = document.getElementById("advancements");
-  const perksGoldBalls = document.getElementById("perksGoldBalls");
-  const perksFastConveyor = document.getElementById("perksFastConveyor");
-  const perksSplitBalls = document.getElementById("perksSplitBalls");
-  const toggleMusicButton = document.getElementById("toggleMusicButton");
-  const setMusicUrlButton = document.getElementById("setMusicUrlButton");
-  const toggleSoundEffectsButton = document.getElementById(
-    "toggleSoundEffectsButton"
-  );
-  const backgroundMusic = document.getElementById("backgroundMusic");
-  const advancementsListDiv = document.getElementById("advancementList");
-  const openAdvancements = document.getElementById("openAdvancements");
-  const toggleButtonHolder = document.getElementById("toggleButtonHolder");
+  const element = (id) => document.getElementById(id);
+
+  const buttonHolder = element("buttonHolder");
+  const informationDiv = element("information");
+  const perksShop = element("perksShop");
+  const settingsPopup = element("settings");
+  const prestigePopup = element("prestige");
+  const advancementsPopup = element("advancements");
+  const perksGoldBalls = element("perksGoldBalls");
+  const perksFastConveyor = element("perksFastConveyor");
+  const perksSplitBalls = element("perksSplitBalls");
+  const toggleMusicButton = element("toggleMusicButton");
+  const setMusicUrlButton = element("setMusicUrlButton");
+  const toggleSoundEffectsButton = element("toggleSoundEffectsButton");
+  const backgroundMusic = element("backgroundMusic");
+  const advancementsListDiv = element("advancementList");
+  const openAdvancements = element("openAdvancements");
+  const toggleButtonHolder = element("toggleButtonHolder");
 
   const SMALL_SCREEN_WIDTH = 750;
   const ASPECT_RATIO = 800 / 600;
-  const MAX_WIDTH = 810;
-  const MAX_HEIGHT = 610;
+  const MAX_WIDTH = 900;
+  const MAX_HEIGHT = 700;
   const CATEGORY_UNCOLLECTED = 0b1;
   const CATEGORY_COLLECTED = 0b10;
   const CATEGORY_INVISIBLE_WALL = 0b100;
@@ -36,7 +36,7 @@
   const engine = Engine.create();
   const { world } = engine;
 
-  const canvas = document.getElementById("gameCanvas");
+  const canvas = element("gameCanvas");
   canvas.width = 800;
   canvas.height = 600;
 
@@ -59,7 +59,7 @@
       buttonHolder.style.display = guiActive ? "none" : "flex";
     }
 
-    // Run sizing in the next frame so layout is updated
+    // run sizing next frame so layout is updated
     requestAnimationFrame(() => {
       let width = Math.min(document.documentElement.clientWidth, MAX_WIDTH);
       let height = Math.min(document.documentElement.clientHeight, MAX_HEIGHT);
@@ -97,7 +97,6 @@
     moneyMultiplier: 1,
     bounciness: 0.6,
     moneyHyperplier: 1,
-    maxEntropy: 9,
   };
 
   var platformWidth = 550,
@@ -122,9 +121,6 @@
       startPoints: 0,
       goldChance: 0,
     };
-
-  var entropy = 0;
-  var maxEntropy = DEFAULTS.maxEntropy;
 
   engine.world.gravity.y = gravity;
 
@@ -260,17 +256,6 @@
         return moneyHyperplier < 2;
       },
     },
-    upgradeEntropy: {
-      baseText: "Increment Entropy Capacity",
-      upgradeCost: 200,
-      upgradeMulti: 1.4,
-      whenPurchase: () => {
-        maxEntropy += 1;
-      },
-      purchaseCondition: () => {
-        return true;
-      },
-    },
   };
 
   const INITIAL_BUTTON_COSTS = {};
@@ -343,7 +328,7 @@
   function showAdvancementPopup(title, description) {
     const audio = new Audio("./sounds/Advancement.wav");
     audio.volume = 1;
-    audio.play().catch(() => {});
+    audio.play().catch(() => { });
 
     const popup = document.createElement("div");
     popup.className = "advancement-popup";
@@ -377,8 +362,7 @@
         k: completedAdvancements,
         p: prestigePoints,
         q: prestigeLevel,
-        r: prestigeUpgrades,
-        s: maxEntropy
+        r: prestigeUpgrades
       })
     );
   }
@@ -437,15 +421,7 @@
     setTimeout(() => floatElem.remove(), 1000);
   }
 
-  function addEntropy(amount) {
-    entropy = Math.max(0, Math.min(maxEntropy, entropy + amount));
-    updateStuff({ onlyInformation: true });
-  }
-
   function spawnObject({ x, y, size } = {}) {
-    if (entropy >= maxEntropy) return;
-    addEntropy(1);
-
     const baseGoldChance = perks.includes("goldBalls") ? 0.1 : 0;
     const goldChance = baseGoldChance + (prestigeUpgrades.goldChance || 0);
     const isGold = Math.random() < goldChance;
@@ -462,12 +438,12 @@
 
     const myRender = isGold
       ? {
-          sprite: {
-            texture: "./images/gold.png",
-            xScale: _size / 333,
-            yScale: _size / 333,
-          },
-        }
+        sprite: {
+          texture: "./images/gold.png",
+          xScale: _size / 333,
+          yScale: _size / 333,
+        },
+      }
       : { fillStyle: color };
 
     const obj = Bodies.circle(_x, _y, _size / 2, {
@@ -494,15 +470,13 @@
     const information = [
       `<strong>Points: ${points}</strong>`,
       prestigeLevel !== 0 &&
-        `<strong>Prestige Points: ${prestigePoints}</strong>`,
+      `<strong>Prestige Points: ${prestigePoints}</strong>`,
       `Spawn Delay: ${(spawnInterval / 1000).toFixed(2)}`,
       `Steepness: ${platformAngle.toFixed(2)}`,
       `Ball Bounciness: ${bounciness.toFixed(2)}`,
-      `Ball Money: x${moneyMultiplier.toFixed(2)}${
-        moneyHyperplier !== 1 ? ` (x${moneyHyperplier.toFixed(2)})` : ""
+      `Ball Money: x${moneyMultiplier.toFixed(2)}${moneyHyperplier !== 1 ? ` (x${moneyHyperplier.toFixed(2)})` : ""
       }`,
       `Gravity: x${gravity.toFixed(2)}`,
-      `<p class="${entropy / maxEntropy > 0.8 ? 'red' : ''}">Entropy: ${entropy} / ${maxEntropy}</p>`,
       ,
     ].filter(Boolean);
     informationDiv.innerHTML = information.join("<br>");
@@ -516,7 +490,7 @@
     for (const key in buttons) {
       const value = buttons[key];
       const button =
-        value.element || (value.element = document.getElementById(key));
+        value.element || (value.element = element(key));
 
       let condition;
       try {
@@ -587,7 +561,7 @@
       if (soundEffectsEnabled) {
         const audio = new Audio("./sounds/Hint.wav");
         audio.volume = 0.6;
-        audio.play().catch(() => {});
+        audio.play().catch(() => { });
       }
     });
     buttonHolder.appendChild(newButton);
@@ -619,7 +593,6 @@
       prestigePoints = dataXZ.p ?? 0;
       prestigeLevel = dataXZ.q ?? 0;
       prestigeUpgrades = dataXZ.r ?? prestigeUpgrades;
-      maxEntropy = Math.max(dataXZ.s ?? DEFAULTS.maxEntropy, DEFAULTS.maxEntropy);
 
       if (dataXZ.g) {
         for (const key in dataXZ.g) {
@@ -669,8 +642,7 @@
       if (object && !object.collected) {
         if (
           perks.includes("splitBalls") &&
-          Math.random() < 9 / 100 &&
-          entropy < maxEntropy - 1
+          Math.random() < 9 / 100
         ) {
           goldenDivorce = !!object.isGold;
 
@@ -707,7 +679,6 @@
             "#bd8d4f"
           );
 
-          addEntropy(-1);
           World.remove(world, object);
           continue;
         }
@@ -726,7 +697,6 @@
         lastPointsEarned = finalEarn;
         points += finalEarn;
 
-        addEntropy(-1);
         updateStuff();
 
         showFloatingText(object.position.x, object.position.y, "+" + finalEarn);
@@ -753,20 +723,21 @@
     if (delta >= frameDuration) {
       lastFrame = now - (delta % frameDuration);
 
-      if (now - lastSpawn > spawnInterval && entropy < maxEntropy) {
+      if (now - lastSpawn > spawnInterval) {
         spawnObject();
         lastSpawn = now;
       }
 
       const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
       for (const body of Composite.allBodies(world)) {
         if (body.label === "fallingObject" && body.collected) {
           const radius = body.circleRadius || 0;
           if (
             body.position.x + radius < 0 ||
-            body.position.x - radius > canvasWidth
+            body.position.x - radius > canvasWidth ||
+            body.position.y - radius > canvasHeight
           ) {
-            addEntropy(-1);
             World.remove(world, body);
           }
         }
@@ -811,18 +782,18 @@
     }
   });
 
-  document.getElementById("openPerksShop").addEventListener("click", () => {
+  element("openPerksShop").addEventListener("click", () => {
     perksShop.style.display = "flex";
     buttonHolder.style.display = "none";
     toggleButtonHolder.style.display = "none";
   });
-  document.getElementById("openPrestige").addEventListener("click", () => {
+  element("openPrestige").addEventListener("click", () => {
     renderPrestigePopup();
     prestigePopup.style.display = "flex";
     buttonHolder.style.display = "none";
     toggleButtonHolder.style.display = "none";
   });
-  document.getElementById("openSettings").addEventListener("click", () => {
+  element("openSettings").addEventListener("click", () => {
     settingsPopup.style.display = "flex";
     buttonHolder.style.display = "none";
     toggleButtonHolder.style.display = "none";
@@ -881,7 +852,7 @@
   });
 
   setMusicUrlButton.addEventListener("click", () => {
-    const musicUrlInput = document.getElementById("musicUrlInput").value;
+    const musicUrlInput = element("musicUrlInput").value;
 
     let url;
     try {
@@ -957,7 +928,7 @@
         backgroundMusic.src = localStorage.getItem("musicUrl");
       if (localStorage.getItem("music") === "true" && backgroundMusic.paused) {
         backgroundMusic.volume = 0.4;
-        backgroundMusic.play().catch(() => {});
+        backgroundMusic.play().catch(() => { });
       }
     },
     { once: true }
@@ -1012,7 +983,7 @@
   const PRESTIGE_THRESHOLD = 10000;
 
   function renderPrestigePopup() {
-    const content = document.getElementById("prestigePopupContent");
+    const content = element("prestigePopupContent");
     content.innerHTML = "";
 
     const h = document.createElement("h2");
@@ -1049,14 +1020,12 @@
 
       points = 0;
       lastPointsEarned = 0;
-      entropy = 0;
       spawnInterval = DEFAULTS.spawnInterval;
       platformAngle = DEFAULTS.platformAngle;
       gravity = DEFAULTS.gravity;
       moneyMultiplier = DEFAULTS.moneyMultiplier;
       bounciness = DEFAULTS.bounciness;
       moneyHyperplier = DEFAULTS.moneyHyperplier;
-      maxEntropy = DEFAULTS.maxEntropy;
       perks = [];
 
       for (const k in buttons) {
@@ -1083,7 +1052,7 @@
       if (soundEffectsEnabled) {
         const audio = new Audio("./sounds/Hint.wav");
         audio.volume = 0.6;
-        audio.play().catch(() => {});
+        audio.play().catch(() => { });
       }
 
       alert(`Prestiged! You gained ${potentialGain} prestige point(s).`);
@@ -1127,7 +1096,7 @@
         if (soundEffectsEnabled) {
           const audio = new Audio("./sounds/Hint.wav");
           audio.volume = 0.6;
-          audio.play().catch(() => {});
+          audio.play().catch(() => { });
         }
       });
 
