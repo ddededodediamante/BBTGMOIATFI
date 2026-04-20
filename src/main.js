@@ -249,7 +249,7 @@ const advancementsData = {
 };
 
 function showAdvancementPopup(title, description) {
-  const audio = new Audio("./sounds/Advancement.wav");
+  const audio = new Audio("./sounds/advancement.wav");
   audio.volume = 1;
   audio.play().catch(() => {});
 
@@ -513,7 +513,7 @@ function renderPrestigePopup() {
     renderPrestigePopup();
 
     if (soundEffectsEnabled) {
-      const audio = new Audio("./sounds/Hint.wav");
+      const audio = new Audio("./sounds/hint.wav");
       audio.volume = 0.6;
       audio.play().catch(() => {});
     }
@@ -551,7 +551,7 @@ function renderPrestigePopup() {
       updateStuff();
       renderPrestigePopup();
       if (soundEffectsEnabled) {
-        const audio = new Audio("./sounds/Hint.wav");
+        const audio = new Audio("./sounds/hint.wav");
         audio.volume = 0.6;
         audio.play().catch(() => {});
       }
@@ -651,7 +651,7 @@ for (const key in buttons) {
     updateStuff();
 
     if (soundEffectsEnabled) {
-      const audio = new Audio("./sounds/Hint.wav");
+      const audio = new Audio("./sounds/hint.wav");
       audio.volume = 0.6;
       audio.play().catch(() => {});
     }
