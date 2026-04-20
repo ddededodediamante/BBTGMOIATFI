@@ -1,0 +1,359 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) #00000000;
+}
+
+body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #222;
+  background: linear-gradient(180deg, #222222 0%, #181818 100%);
+  color: #fff;
+  font-family: sans-serif;
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 10px;
+}
+
+p.red {
+  color: #ff4343;
+}
+
+a {
+  color: #7ba9ff;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #8db5ff;
+}
+
+button {
+  display: inline-block;
+  cursor: pointer;
+  color: #222;
+  background-color: #dcdcdc;
+  border: 2px solid #858585;
+  border-radius: 5px;
+  font-size: 14px;
+  text-wrap: nowrap;
+  will-change: background-color, border-color, opacity;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+  padding: 5px;
+  margin: 0;
+}
+
+button:hover,
+button.active {
+  background-color: #ffffff;
+  border-color: #b1b1b1;
+}
+
+button.red {
+  color: white;
+  background-color: #dd4545;
+  border: 2px solid #923333;
+}
+
+button.red:hover,
+button.red.active {
+  background-color: #ff6262;
+  border-color: #c54444;
+}
+
+:disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+input {
+  color: #222;
+  background-color: #dcdcdc;
+  border: 2px solid #858585;
+  border-radius: 5px;
+  font-size: 14px;
+  text-wrap: nowrap;
+  padding: 5px;
+  margin: 0;
+}
+
+div.inline {
+  display: flex;
+  flex-direction: row;
+  gap: inherit;
+}
+
+
+div.line {
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.3);
+  height: 3px;
+  width: 50%;
+}
+
+#gameCanvas {
+  border: 5px solid #333;
+  border-radius: 10px;
+}
+
+.floating-text {
+  position: absolute;
+  font-size: 18px;
+  pointer-events: none;
+  opacity: 1;
+  transition: transform 1s ease-out, opacity 1s linear;
+  font-weight: bold;
+}
+
+#information {
+  position: absolute;
+  font-size: 20px;
+  top: 10px;
+  left: 10px;
+}
+
+#information p {
+  margin: 0;
+}
+
+#information strong {
+  font-size: 25px;
+}
+
+#buttonHolder {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 5px;
+  top: 10px;
+  right: 10px;
+}
+
+button#toggleButtonHolder {
+  position: absolute;
+  font-family: monospace;
+  font-size: 25px;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+}
+
+button#toggleButtonHolder img {
+  width: 25px;
+  height: 25px;
+}
+
+div.popup {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: #424242dc;
+  border-radius: 10px;
+  gap: 5px;
+  top: 10%;
+  left: 10%;
+  bottom: 10%;
+  right: 10%;
+  padding: 5px;
+}
+
+div.popup * {
+  text-align: center;
+}
+
+div.popup h2 {
+  margin: 10px;
+  width: 100%;
+}
+
+div.popup h2::after {
+  content: "";
+  display: block;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.3);
+  height: 3px;
+  width: 100%;
+  margin-top: 15px;
+}
+
+div.popup button {
+  font-size: 16px;
+  padding: 6px;
+}
+
+div.popup button.closePopup {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #dd4545;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+}
+
+div.popup button.closePopup img {
+  width: 25px;
+  height: 25px;
+}
+
+div.prestigeShopDiv {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+div.prestigeShopItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+}
+
+div.advancement-popup {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background-color: #dcdcdc;
+  color: #222;
+  border: 2px solid #858585;
+  border-radius: 5px;
+  box-shadow: 0 0 10px #000;
+  font-size: 16px;
+  animation: advancement-fade 4s ease forwards;
+  bottom: 20px;
+  right: 20px;
+  padding: 6px;
+}
+
+div.advancement-list {
+  background-color: #ccc;
+  color: #222;
+  border: 2px solid #858585;
+  border-radius: 5px;
+  text-align: left;
+  margin-bottom: 4px;
+  padding: 6px;
+}
+
+div.advancement-list.done {
+  background-color: #a1dca1;
+  border-color: #78aa78;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+@keyframes disappear {
+  from {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes advancement-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@media (max-width: 700px) {
+  #information {
+    font-size: 18px;
+  }
+  #information strong {
+    font-size: 23px;
+  }
+}
+
+@media (max-width: 560px) {
+  #information {
+    font-size: 16px;
+  }
+  #information strong {
+    font-size: 21px;
+  }
+
+  div.popup {
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    border-radius: 0 !important;
+  }
+}
