@@ -101,8 +101,15 @@ div.inline {
   display: flex;
   flex-direction: row;
   gap: inherit;
+  align-items: center;
 }
 
+div.vertical {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+  align-items: center;
+}
 
 div.line {
   border-radius: 3px;
@@ -265,13 +272,20 @@ div.advancement-list {
   border: 2px solid #858585;
   border-radius: 5px;
   text-align: left;
-  margin-bottom: 4px;
   padding: 6px;
 }
 
 div.advancement-list.done {
   background-color: #a1dca1;
   border-color: #78aa78;
+}
+
+#advancementList {
+  display: grid;
+  gap: 5px;
+  padding: 5px;
+  width: 100%;
+  grid-template-columns: auto auto auto;
 }
 
 ::-webkit-scrollbar {

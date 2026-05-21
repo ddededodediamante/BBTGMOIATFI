@@ -16,4 +16,5 @@ export const DEFAULTS = {
   moneyMultiplier: 1,
   bounciness: 0.6,
   moneyHyperplier: 1,
+  ballSize: 0,
 };
