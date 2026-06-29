@@ -248,7 +248,7 @@ const advancementsData = {
   },
   points_100000: {
     name: "Boing! Boing!",
-    description: "Reach 10000 points",
+    description: "Reach 100000 points",
     check: () => points >= 100000,
   },
   bouncy_max: {
@@ -283,8 +283,13 @@ const advancementsData = {
   },
   start_over: {
     name: "Start Over",
-    description: "Obtain 1 or more prestige points",
+    description: "Have 1 or more prestige points at once",
     check: () => prestigePoints >= 1,
+  },
+  radiant_revival: {
+    name: "Radiant Revival",
+    description: "Have 5 or more prestige points at once",
+    check: () => prestigePoints >= 5,
   },
 };
 
