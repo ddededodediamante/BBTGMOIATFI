@@ -262,18 +262,18 @@ const perksData = {
   },
   richBalls: {
     baseText: "Lucky Gold",
-    cost: 12000,
+    cost: 15000,
     description: "Gold and rainbow balls are worth 50% more"
   },
   critBalls: {
     baseText: "Critical Balls",
-    cost: 15000,
+    cost: 23000,
     description: "Adds a 12% chance of a critical hit (x5 points)",
     requiredLevel: 1
   },
   doubleDrop: {
     baseText: "Double Drop",
-    cost: 20000,
+    cost: 30000,
     description: "Adds a 20% chance of spawning a second ball",
     requiredLevel: 3
   }
