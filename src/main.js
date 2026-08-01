@@ -405,7 +405,7 @@ function updateStuff({ onlyInformation = false } = {}) {
     prestigeLevel !== 0 &&
       `<strong>Prestige Points: ${formatNumber(prestigePoints)}</strong>`,
     `Lifetime Points: ${formatNumber(lifetimePoints)}`,
-    `Spawn Delay: ${(effectiveSpawnInterval() / 1000).toFixed(2)}`,
+    `Spawn Delay: ${(effectiveSpawnInterval() / 1000).toFixed(2)}s`,
     `Steepness: ${platformAngle.toFixed(2)}`,
     `Ball Bounciness: ${bounciness.toFixed(2)}`,
     `Ball Size: +${ballSize.toFixed(2)}`,

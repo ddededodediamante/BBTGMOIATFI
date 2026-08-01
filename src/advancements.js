@@ -8,14 +8,14 @@ export const advancementsData = {
   },
   points_1000: {
     name: "Bouncier Balls",
-    description: "Reach 1K points",
+    description: "Reach 1.00K points",
     category: "points",
     sort: 1000,
     check: s => s.points >= 1000
   },
   points_10000: {
     name: "I Love Balls",
-    description: "Reach 10K points",
+    description: "Reach 10.0K points",
     category: "points",
     sort: 10000,
     check: s => s.points >= 10000
@@ -29,7 +29,7 @@ export const advancementsData = {
   },
   points_1m: {
     name: "Ballin'",
-    description: "Reach 1M points",
+    description: "Reach 1.00M points",
     category: "points",
     sort: 1000000,
     check: s => s.points >= 1000000
@@ -50,10 +50,10 @@ export const advancementsData = {
   },
   mega_earner: {
     name: "Mega Earner",
-    description: "Earn 10K or more points in a single impact",
+    description: "Earn 5.60K or more points in a single impact",
     category: "earnings",
     sort: 10000,
-    check: s => s.lastPointsEarned >= 10000
+    check: s => s.lastPointsEarned >= 5600
   },
   bouncy_max: {
     name: "Super Bouncy",
@@ -154,14 +154,14 @@ export const advancementsData = {
   },
   balls_1000: {
     name: "A Lot of Balls",
-    description: "Spawn 1K balls total",
+    description: "Spawn 1.00K balls total",
     category: "balls",
     sort: 1000,
     check: s => s.totalBallsSpawned >= 1000
   },
   balls_10000: {
     name: "Balls, Balls, Balls",
-    description: "Spawn 10K balls total",
+    description: "Spawn 10.0K balls total",
     category: "balls",
     sort: 10000,
     check: s => s.totalBallsSpawned >= 10000
@@ -217,14 +217,14 @@ export const advancementsData = {
   },
   lifetime_1000000: {
     name: "Lifetime Achiever",
-    description: "Earn 1M lifetime points",
+    description: "Earn 1.00M lifetime points",
     category: "lifetime",
     sort: 1000000,
     check: s => s.lifetimePoints >= 1000000
   },
   lifetime_10m: {
     name: "Ballionaire",
-    description: "Earn 10M lifetime points",
+    description: "Earn 10.0M lifetime points",
     category: "lifetime",
     sort: 10000000,
     check: s => s.lifetimePoints >= 10000000
@@ -235,6 +235,13 @@ export const advancementsData = {
     category: "lifetime",
     sort: 100000000,
     check: s => s.lifetimePoints >= 100000000
+  },
+  lifetime_1b: {
+    name: "Balling Addiction",
+    description: "Earn 1.00B lifetime points",
+    category: "lifetime",
+    sort: 1000000000,
+    check: s => s.lifetimePoints >= 1000000000
   }
 };
 
