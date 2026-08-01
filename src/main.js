@@ -7,7 +7,7 @@ import {
   CATEGORY_COLLECTED,
   CATEGORY_INVISIBLE_WALL,
   PRESTIGE_THRESHOLD,
-  DEFAULTS,
+  DEFAULTS
 } from "./config.js";
 import {
   engine,
@@ -24,7 +24,7 @@ import {
   Events,
   Body,
   Runner,
-  Composite,
+  Composite
 } from "./physics.js";
 
 /* DOM Elements */
@@ -63,6 +63,7 @@ const toggleButtonHolder = element("toggleButtonHolder");
 /* Game State */
 
 var points = 0,
+  lifetimePoints = 0,
   spawnInterval = DEFAULTS.spawnInterval,
   platformAngle = DEFAULTS.platformAngle,
   gravity = DEFAULTS.gravity,
@@ -82,6 +83,8 @@ var prestigePoints = 0,
     moneyMult: 0,
     startPoints: 0,
     goldChance: 0,
+    spawnRate: 0,
+    ballSize: 0
   };
 
 engine.world.gravity.y = gravity;
@@ -91,6 +94,29 @@ engine.world.gravity.y = gravity;
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const zx = v => btoa(JSON.stringify(v)).split("").reverse().join("");
 const xz = v => JSON.parse(atob(v.split("").reverse().join("")));
+
+function formatNumber(value) {
+  const n = Math.floor(value);
+  if (!isFinite(n)) return "∞";
+  if (n < 0) return "-" + formatNumber(-n);
+
+  const tiers = [
+    { limit: 1e15, suffix: "Qa" },
+    { limit: 1e12, suffix: "T" },
+    { limit: 1e9, suffix: "B" },
+    { limit: 1e6, suffix: "M" },
+    { limit: 1e3, suffix: "K" }
+  ];
+
+  for (const tier of tiers) {
+    if (n >= tier.limit) {
+      const scaled = n / tier.limit;
+      const decimals = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
+      return scaled.toFixed(decimals) + tier.suffix;
+    }
+  }
+  return String(n);
+}
 
 function getButtonData() {
   const out = {};
@@ -116,7 +142,8 @@ function saveGame() {
       q: prestigeLevel,
       r: prestigeUpgrades,
       s: ballSize,
-    }),
+      t: lifetimePoints
+    })
   );
 }
 
@@ -141,7 +168,7 @@ function saveGame() {
     },
     writable: false,
     configurable: false,
-    enumerable: false,
+    enumerable: false
   });
 })();
 
@@ -155,7 +182,7 @@ const buttons = {
     whenPurchase: () => {
       spawnInterval *= 0.9;
     },
-    purchaseCondition: () => spawnInterval > 400,
+    purchaseCondition: () => spawnInterval > 400
   },
   upgradeMoney: {
     baseText: "Multiply Ball Money",
@@ -164,7 +191,7 @@ const buttons = {
     whenPurchase: () => {
       moneyMultiplier += 0.3;
     },
-    purchaseCondition: () => true,
+    purchaseCondition: () => true
   },
   upgradeAngle: {
     baseText: "Increase Steepness",
@@ -173,7 +200,7 @@ const buttons = {
     whenPurchase: () => {
       platformAngle += 0.02;
     },
-    purchaseCondition: () => platformAngle < 0.85,
+    purchaseCondition: () => platformAngle < 0.85
   },
   upgradeBallSize: {
     baseText: "Increase Ball Size",
@@ -182,7 +209,7 @@ const buttons = {
     whenPurchase: () => {
       ballSize += 2;
     },
-    purchaseCondition: () => ballSize < 20,
+    purchaseCondition: () => ballSize < 20
   },
   upgradeGravity: {
     baseText: "Increment Gravity",
@@ -191,7 +218,7 @@ const buttons = {
     whenPurchase: () => {
       gravity += 0.2;
     },
-    purchaseCondition: () => gravity < 3,
+    purchaseCondition: () => gravity < 3
   },
   upgradeBounciness: {
     baseText: () => (bounciness < 1.1 ? "+0.1 Bouncy & Hyperplier" : "+0.1 Hyperplier"),
@@ -201,8 +228,8 @@ const buttons = {
       if (bounciness < 1.1) bounciness += 0.1;
       moneyHyperplier += 0.1;
     },
-    purchaseCondition: () => moneyHyperplier < 2,
-  },
+    purchaseCondition: () => moneyHyperplier < 2
+  }
 };
 
 /* Perks */
@@ -211,18 +238,40 @@ const perksData = {
   goldBalls: {
     baseText: "Gold Balls",
     cost: 2400,
-    description: "Adds a 10% chance of a ball spawning as gold (x2.5 value)",
+    description: "Adds a 10% chance of a ball spawning as gold (x2.5 value)"
   },
   fastConveyor: {
     baseText: "Fast Conveyor",
     cost: 3000,
-    description: "Doubles the conveyor belt speed",
+    description: "Doubles the conveyor belt speed"
   },
   splitBalls: {
     baseText: "Split Balls",
     cost: 5000,
-    description: "Adds a 9% chance of a ball splitting on impact",
+    description: "Adds a 9% chance of a ball splitting on impact"
   },
+  rainbowBalls: {
+    baseText: "Rainbow Balls",
+    cost: 9000,
+    description: "Adds an 8% chance of a ball spawning as rainbow (x4 value)"
+  },
+  richBalls: {
+    baseText: "Lucky Gold",
+    cost: 12000,
+    description: "Gold and rainbow balls are worth 50% more"
+  },
+  critBalls: {
+    baseText: "Critical Balls",
+    cost: 15000,
+    description: "Adds a 12% chance of a critical hit (x5 points)",
+    requiredLevel: 1
+  },
+  doubleDrop: {
+    baseText: "Double Drop",
+    cost: 20000,
+    description: "Adds a 20% chance of spawning a second ball",
+    requiredLevel: 3
+  }
 };
 
 const INITIAL_BUTTON_COSTS = {};
@@ -234,63 +283,88 @@ const advancementsData = {
   points_100: {
     name: "Bouncy Balls",
     description: "Reach 100 points",
-    check: () => points >= 100,
+    check: () => points >= 100
   },
   points_1000: {
     name: "Bouncier Balls",
     description: "Reach 1000 points",
-    check: () => points >= 1000,
+    check: () => points >= 1000
   },
   points_10000: {
     name: "I Love Balls",
     description: "Reach 10000 points",
-    check: () => points >= 10000,
+    check: () => points >= 10000
   },
   points_100000: {
     name: "Boing! Boing!",
     description: "Reach 100000 points",
-    check: () => points >= 100000,
+    check: () => points >= 100000
   },
   bouncy_max: {
     name: "Super Bouncy",
     description: "Max out bounciness",
-    check: () => bounciness >= 1.1,
+    check: () => bounciness >= 1.1
   },
   big_earner: {
     name: "Big Earner",
     description: "Earn 100 or more points in a single impact",
-    check: () => lastPointsEarned >= 100,
+    check: () => lastPointsEarned >= 100
   },
   bigger_earner: {
     name: "Bigger Earner",
     description: "Earn 586 or more points in a single impact",
-    check: () => lastPointsEarned >= 586,
+    check: () => lastPointsEarned >= 586
   },
   hyper_earner: {
     name: "Hyper Earner",
     description: "Max out hyperplier",
-    check: () => moneyHyperplier >= 2,
+    check: () => moneyHyperplier >= 2
   },
   gold_balls: {
     name: "Golden Touch",
     description: "Buy the Gold Balls perk",
-    check: () => perks.has("goldBalls"),
+    check: () => perks.has("goldBalls")
   },
   golden_divorce: {
     name: "Golden Divorce",
     description: "A golden ball has split upon impact",
-    check: () => goldenDivorce,
+    check: () => goldenDivorce
   },
   start_over: {
     name: "Start Over",
-    description: "Have 1 or more prestige points at once",
-    check: () => prestigePoints >= 1,
+    description: "Reach prestige level 1",
+    check: () => prestigeLevel >= 1
   },
   radiant_revival: {
     name: "Radiant Revival",
-    description: "Have 5 or more prestige points at once",
-    check: () => prestigePoints >= 5,
+    description: "Reach prestige level 5",
+    check: () => prestigeLevel >= 5
   },
+  prestige_10: {
+    name: "Prestige Enthusiast",
+    description: "Reach prestige level 10",
+    check: () => prestigeLevel >= 10
+  },
+  prestige_25: {
+    name: "Prestige Addict",
+    description: "Reach prestige level 25",
+    check: () => prestigeLevel >= 25
+  },
+  prestige_50: {
+    name: "Prestige Master",
+    description: "Reach prestige level 50",
+    check: () => prestigeLevel >= 50
+  },
+  lifetime_100000: {
+    name: "Lifetime Earner",
+    description: "Earn 100K lifetime points",
+    check: () => lifetimePoints >= 100000
+  },
+  lifetime_1000000: {
+    name: "Lifetime Achiever",
+    description: "Earn 1M lifetime points",
+    check: () => lifetimePoints >= 1000000
+  }
 };
 
 function showAdvancementPopup(title, description) {
@@ -300,7 +374,7 @@ function showAdvancementPopup(title, description) {
 
   const popup = create("div", {
     className: "advancement-popup",
-    innerHTML: `<strong>${title}</strong><br>${description}`,
+    innerHTML: `<strong>${title}</strong><br>${description}`
   });
   document.body.appendChild(popup);
 
@@ -322,7 +396,7 @@ function checkAdvancements() {
 
 function isGUIActive() {
   return [perksShop, settingsPopup, advancementsPopup, prestigePopup].some(
-    i => i.style.display === "flex",
+    i => i.style.display === "flex"
   );
 }
 
@@ -370,8 +444,8 @@ function showFloatingText(x, y, text, color) {
     style: {
       left: screenX + "px",
       top: screenY - 18 + "px",
-      color: color || "inherit",
-    },
+      color: color || "inherit"
+    }
   });
   document.body.appendChild(floatElem);
 
@@ -383,16 +457,22 @@ function showFloatingText(x, y, text, color) {
   setTimeout(() => floatElem.remove(), 1000);
 }
 
+function effectiveSpawnInterval() {
+  return Math.max(120, spawnInterval * Math.pow(0.95, prestigeUpgrades.spawnRate || 0));
+}
+
 function updateStuff({ onlyInformation = false } = {}) {
   const information = [
-    `<strong>Points: ${points}</strong>`,
-    prestigeLevel !== 0 && `<strong>Prestige Points: ${prestigePoints}</strong>`,
-    `Spawn Delay: ${(spawnInterval / 1000).toFixed(2)}`,
+    `<strong>Points: ${formatNumber(points)}</strong>`,
+    prestigeLevel !== 0 &&
+      `<strong>Prestige Points: ${formatNumber(prestigePoints)}</strong>`,
+    `Lifetime Points: ${formatNumber(lifetimePoints)}`,
+    `Spawn Delay: ${(effectiveSpawnInterval() / 1000).toFixed(2)}`,
     `Steepness: ${platformAngle.toFixed(2)}`,
     `Ball Bounciness: ${bounciness.toFixed(2)}`,
     `Ball Size: +${ballSize.toFixed(2)}`,
     `Ball Money: x${moneyMultiplier.toFixed(2)}${moneyHyperplier !== 1 ? ` (x${moneyHyperplier.toFixed(2)})` : ""}`,
-    `Gravity: x${gravity.toFixed(2)}`,
+    `Gravity: x${gravity.toFixed(2)}`
   ].filter(Boolean);
   informationDiv.innerHTML = information.join("<br>");
 
@@ -417,7 +497,7 @@ function updateStuff({ onlyInformation = false } = {}) {
       typeof value.baseText === "function" ? value.baseText() : value.baseText;
 
     if (condition === true) {
-      button.innerText = `${baseText} (Cost: ${value.upgradeCost})`;
+      button.innerText = `${baseText} (Cost: ${formatNumber(value.upgradeCost)})`;
       button.disabled = points < value.upgradeCost;
     } else {
       button.innerText = `${baseText} (Unavailable)`;
@@ -431,13 +511,17 @@ function updateStuff({ onlyInformation = false } = {}) {
     if (perks.has(key)) {
       perk.element.innerText = `${perk.baseText} (Obtained)`;
       perk.element.disabled = true;
+    } else if (prestigeLevel < (perk.requiredLevel || 0)) {
+      perk.element.innerText = `${perk.baseText} (Requires Prestige Level ${perk.requiredLevel})`;
+      perk.element.disabled = true;
     } else {
-      perk.element.innerText = `${perk.baseText} (Cost: ${perk.cost})`;
+      perk.element.innerText = `${perk.baseText} (Cost: ${formatNumber(perk.cost)})`;
       perk.element.disabled = points < perk.cost;
     }
   }
 
   checkAdvancements();
+  refreshOpenPrestigePopup();
 }
 
 function renderAdvancementsPopup() {
@@ -449,7 +533,7 @@ function renderAdvancementsPopup() {
 
     const el = create("div", {
       className: "advancement-list",
-      innerHTML: `<strong>${adv.name}</strong><br><small>${adv.description}</small>`,
+      innerHTML: `<strong>${adv.name}</strong><br><small>${adv.description}</small>`
     });
     if (isDone) el.classList.add("done");
     advancementsListDiv.appendChild(el);
@@ -464,143 +548,234 @@ const prestigeShopItems = [
     name: "Money Boost",
     desc: "+20% permanent earnings",
     cost: 1,
+    costMulti: 1.35,
+    requiredLevel: 0,
     whenPurchase: () => {
       prestigeUpgrades.moneyMult = (prestigeUpgrades.moneyMult || 0) + 0.2;
     },
-    condition: () => true,
+    condition: () => true
   },
   {
     id: "prest_start_points",
     name: "Start Points",
-    desc: "+400 points after prestiging",
+    desc: "+400 points at the start of each run",
     cost: 2,
+    costMulti: 1.1,
+    requiredLevel: 0,
     whenPurchase: () => {
       prestigeUpgrades.startPoints = (prestigeUpgrades.startPoints || 0) + 400;
     },
-    condition: () => true,
+    condition: () => true
   },
   {
     id: "prest_gold_chance",
     name: "Gold Chance",
-    desc: "+5% gold spawn chance",
+    desc: "+5% gold spawn chance (max +40%)",
     cost: 3,
+    costMulti: 1.6,
+    maxLevel: 10,
+    requiredLevel: 0,
     whenPurchase: () => {
       prestigeUpgrades.goldChance = (prestigeUpgrades.goldChance || 0) + 0.05;
     },
-    condition: () => prestigeUpgrades.goldChance < 0.5,
+    condition: () => (prestigeUpgrades.goldChance || 0) < 0.4
   },
+  {
+    id: "prest_spawn_rate",
+    name: "Faster Spawning",
+    desc: "-5% spawn delay, permanent (max 20)",
+    cost: 2,
+    costMulti: 1.45,
+    maxLevel: 20,
+    requiredLevel: 3,
+    whenPurchase: () => {
+      prestigeUpgrades.spawnRate = (prestigeUpgrades.spawnRate || 0) + 1;
+    },
+    condition: () => (prestigeUpgrades.spawnRate || 0) < 20
+  },
+  {
+    id: "prest_ball_size",
+    name: "Bigger Balls",
+    desc: "+1 permanent ball size (max +15)",
+    cost: 3,
+    costMulti: 1.3,
+    maxLevel: 20,
+    requiredLevel: 6,
+    whenPurchase: () => {
+      prestigeUpgrades.ballSize = (prestigeUpgrades.ballSize || 0) + 1;
+    },
+    condition: () => (prestigeUpgrades.ballSize || 0) < 15
+  }
 ];
+
+function prestigeItemLevel(item) {
+  const u = prestigeUpgrades;
+  switch (item.id) {
+    case "prest_money_boost":
+      return Math.round((u.moneyMult || 0) / 0.2);
+    case "prest_start_points":
+      return Math.round((u.startPoints || 0) / 400);
+    case "prest_gold_chance":
+      return Math.round((u.goldChance || 0) / 0.05);
+    case "prest_spawn_rate":
+      return u.spawnRate || 0;
+    case "prest_ball_size":
+      return u.ballSize || 0;
+    default:
+      return 0;
+  }
+}
+
+function prestigeItemCost(item) {
+  const level = prestigeItemLevel(item);
+  return Math.floor(item.cost * Math.pow(item.costMulti || 1, level));
+}
+
+function resetRun() {
+  points = 0;
+  lastPointsEarned = 0;
+  spawnInterval = DEFAULTS.spawnInterval;
+  platformAngle = DEFAULTS.platformAngle;
+  gravity = DEFAULTS.gravity;
+  moneyMultiplier = DEFAULTS.moneyMultiplier;
+  bounciness = DEFAULTS.bounciness;
+  moneyHyperplier = DEFAULTS.moneyHyperplier;
+  ballSize = DEFAULTS.ballSize;
+  perks = new Set();
+
+  for (const k in buttons) {
+    buttons[k].upgradeCost = INITIAL_BUTTON_COSTS[k];
+    if (buttons[k].element) {
+      const baseText =
+        typeof buttons[k].baseText === "function"
+          ? buttons[k].baseText()
+          : buttons[k].baseText;
+      buttons[k].element.innerText =
+        `${baseText} (Cost: ${formatNumber(buttons[k].upgradeCost)})`;
+    }
+  }
+
+  if (prestigeUpgrades.startPoints) points += prestigeUpgrades.startPoints;
+
+  saveGame();
+  updateStuff();
+}
+
+function grantPrestigePoints() {
+  const gain = Math.floor(lifetimePoints / PRESTIGE_THRESHOLD) - prestigeLevel;
+  return Math.max(0, gain);
+}
+
+const prestigeUI = {
+  open: false,
+  lastRefresh: 0,
+  el: {},
+  currentEls: {},
+  buyButtons: []
+};
+
+function prestigeProgress() {
+  const unclaimed = grantPrestigePoints();
+  const segmentStart = (prestigeLevel + unclaimed) * PRESTIGE_THRESHOLD;
+  const nextAt = segmentStart + PRESTIGE_THRESHOLD;
+  const progress = clamp((lifetimePoints - segmentStart) / PRESTIGE_THRESHOLD, 0, 1);
+  return { unclaimed, nextAt, progress };
+}
 
 function renderPrestigePopup() {
   const content = element("prestigePopupContent");
   content.innerHTML = "";
 
   const h = create("h2", {
-    textContent: "Prestige",
+    textContent: "Prestige"
   });
   content.appendChild(h);
 
-  const potentialGain = Math.floor(points / PRESTIGE_THRESHOLD);
-
   const info = create("div", {
     innerHTML: `
-    <p>Total prestige level: <strong>${prestigeLevel}</strong></p>
-    <p>Prestiging grants <strong>${potentialGain}</strong> prestige point(s) (1 per ${PRESTIGE_THRESHOLD} points).</p>
-    <p>Prestiging will reset most normal progress, but your prestige shop upgrades are permanent.</p>
+    <p>Prestige points come from your <strong>lifetime points</strong> (1 per ${formatNumber(PRESTIGE_THRESHOLD)} earned across all runs). They are claimed when you reset the run.</p>
+    <p>Lifetime Points: <strong id="prLifetime"></strong></p>
+    <p>Prestige Level: <strong id="prLevel"></strong></p>
+    <p>Spendable Prestige Points: <strong id="prSpendable"></strong></p>
+    <p>Next prestige point at <strong id="prNext"></strong> lifetime points (<strong id="prPct"></strong>)</p>
   `,
     style: {
-      marginBottom: "10px",
-    },
+      marginBottom: "10px"
+    }
   });
   content.appendChild(info);
 
-  const prestigeNowBtn = create("button", {
-    textContent:
-      potentialGain > 0
-        ? `Prestige Now (Gain ${potentialGain})`
-        : `Prestige Now (Need ${PRESTIGE_THRESHOLD} points)`,
-    disabled: potentialGain <= 0,
-  });
-  onClick(prestigeNowBtn, () => {
+  const bar = create("div", { className: "prestige-bar" });
+  const barFill = create("div", { className: "prestige-bar-fill" });
+  bar.appendChild(barFill);
+  content.appendChild(bar);
+
+  const resetBtn = create("button");
+  onClick(resetBtn, () => {
+    const gain = grantPrestigePoints();
     if (
       !confirm(
-        `Are you sure you want to prestige and gain ${potentialGain} prestige point(s)? This will reset normal progress.`,
+        `Reset your current run and ${gain > 0 ? `claim ${gain} prestige point${gain > 1 ? "s" : ""}` : "claim no prestige points"}? Points, upgrades and perks reset, but permanent upgrades are kept.`
       )
     )
       return;
 
-    prestigePoints += potentialGain;
-    prestigeLevel += potentialGain;
-
-    points = 0;
-    lastPointsEarned = 0;
-    spawnInterval = DEFAULTS.spawnInterval;
-    platformAngle = DEFAULTS.platformAngle;
-    gravity = DEFAULTS.gravity;
-    moneyMultiplier = DEFAULTS.moneyMultiplier;
-    bounciness = DEFAULTS.bounciness;
-    moneyHyperplier = DEFAULTS.moneyHyperplier;
-    ballSize = DEFAULTS.ballSize;
-    perks = new Set();
-
-    for (const k in buttons) {
-      buttons[k].upgradeCost = INITIAL_BUTTON_COSTS[k];
-      if (buttons[k].element) {
-        const baseText =
-          typeof buttons[k].baseText === "function"
-            ? buttons[k].baseText()
-            : buttons[k].baseText;
-        buttons[k].element.innerText = `${baseText} (Cost: ${buttons[k].upgradeCost})`;
-      }
+    if (gain > 0) {
+      prestigePoints += gain;
+      prestigeLevel += gain;
+      showAdvancementPopup(
+        "Prestige!",
+        `Gained ${gain} prestige point${gain > 1 ? "s" : ""}!`
+      );
     }
 
-    if (prestigeUpgrades.startPoints) points += prestigeUpgrades.startPoints;
-
-    saveGame();
-    updateStuff();
-    renderPrestigePopup();
-
+    resetRun();
+    refreshPrestigePopup();
     if (soundEffectsEnabled) {
       const audio = new Audio("./sounds/hint.wav");
       audio.volume = 0.6;
       audio.play().catch(() => {});
     }
-
-    alert(`Prestiged! You gained ${potentialGain} prestige point(s).`);
   });
-  content.appendChild(prestigeNowBtn);
+  content.appendChild(resetBtn);
 
   const shopContainer = create("div", {
-    className: "prestigeShopDiv",
+    className: "prestigeShopDiv"
   });
 
   const shopTitle = create("div", {
-    innerHTML: `<h3>Prestige Shop</h3><p>Buy permanent upgrades using Prestige Points.</p>`,
+    innerHTML: `<h3>Prestige Shop</h3><p>Buy permanent upgrades using Prestige Points.</p>`
   });
   shopContainer.appendChild(shopTitle);
 
   const shopList = create("div", {
-    className: "vertical",
+    className: "vertical"
   });
 
-  for (const item of prestigeShopItems) {
-    const row = create("div", {
-      className: "prestigeShopItem",
-      innerHTML: `<div><strong>${item.name}</strong><br><small>${item.desc}</small></div>`,
-    });
+  const buyButtons = [];
 
-    const buy = create("button", {
-      textContent: `Buy (Cost: ${item.cost})`,
-      disabled: prestigePoints < item.cost,
-    });
+  for (const item of prestigeShopItems) {
+    const row = create("div", { className: "prestigeShopItem" });
+    const info = create("div");
+    info.appendChild(create("strong", { textContent: item.name }));
+    info.appendChild(create("br"));
+    info.appendChild(create("small", { textContent: item.desc }));
+    const levelEl = create("div", { className: "prestigeShopLevel" });
+    info.appendChild(levelEl);
+    row.appendChild(info);
+
+    const buy = create("button");
     onClick(buy, () => {
-      if (prestigePoints < item.cost) return alert("Not enough prestige points.");
+      const cost = prestigeItemCost(item);
+      if (item.requiredLevel > prestigeLevel)
+        return alert(`Requires prestige level ${item.requiredLevel}.`);
+      if (prestigePoints < cost) return alert("Not enough prestige points.");
       if (!item.condition()) return alert("You can't buy this right now.");
-      prestigePoints -= item.cost;
+      prestigePoints -= cost;
       if (item.whenPurchase) item.whenPurchase();
       saveGame();
       updateStuff();
-      renderPrestigePopup();
+      refreshPrestigePopup();
       if (soundEffectsEnabled) {
         const audio = new Audio("./sounds/hint.wav");
         audio.volume = 0.6;
@@ -608,6 +783,7 @@ function renderPrestigePopup() {
       }
     });
 
+    buyButtons.push({ button: buy, item, levelEl });
     row.appendChild(buy);
     shopList.appendChild(row);
   }
@@ -617,23 +793,120 @@ function renderPrestigePopup() {
   const current = create("div", {
     innerHTML: `
     <h3>Current Prestige Upgrades</h3>
-    <p>Money Boost: +${Math.round((prestigeUpgrades.moneyMult || 0) * 100)}%</p>
-    <p>Start Points: ${prestigeUpgrades.startPoints || 0}</p>
-    <p>Gold Chance Bonus: +${Math.round((prestigeUpgrades.goldChance || 0) * 100)}%</p>
-  `,
+    <p id="prMoneyBoost"></p>
+    <p id="prStartPoints"></p>
+    <p id="prGoldChance"></p>
+    <p id="prSpawnRate"></p>
+    <p id="prBallSize"></p>
+  `
   });
   shopContainer.appendChild(current);
   content.appendChild(shopContainer);
+
+  prestigeUI.el = {
+    lifetime: element("prLifetime"),
+    level: element("prLevel"),
+    spendable: element("prSpendable"),
+    next: element("prNext"),
+    pct: element("prPct"),
+    barFill,
+    resetBtn
+  };
+  prestigeUI.currentEls = {
+    moneyBoost: element("prMoneyBoost"),
+    startPoints: element("prStartPoints"),
+    goldChance: element("prGoldChance"),
+    spawnRate: element("prSpawnRate"),
+    ballSize: element("prBallSize")
+  };
+  prestigeUI.buyButtons = buyButtons;
+
+  refreshPrestigePopup();
+}
+
+function refreshPrestigePopup() {
+  const el = prestigeUI.el;
+  if (!el.lifetime) return;
+
+  const { unclaimed, nextAt, progress } = prestigeProgress();
+
+  el.lifetime.textContent = formatNumber(lifetimePoints);
+  el.level.textContent = formatNumber(prestigeLevel);
+  el.spendable.textContent = formatNumber(prestigePoints);
+  el.next.textContent = formatNumber(nextAt);
+  el.pct.textContent = Math.round(progress * 100) + "%";
+  el.barFill.style.width = Math.round(progress * 100) + "%";
+  el.resetBtn.textContent =
+    unclaimed > 0
+      ? `Reset Run (Claim ${formatNumber(unclaimed)} Prestige Point${unclaimed > 1 ? "s" : ""})`
+      : "Reset Run (No Prestige Points to Claim)";
+
+  for (const { button, item, levelEl } of prestigeUI.buyButtons) {
+    const isGated = item.requiredLevel > prestigeLevel;
+    const level = prestigeItemLevel(item);
+    levelEl.textContent = item.maxLevel
+      ? `Level ${level} / ${item.maxLevel}`
+      : `Level ${level}`;
+
+    if (isGated) {
+      button.textContent = `Unlocks at Prestige Level ${item.requiredLevel}`;
+      button.disabled = true;
+    } else if (!item.condition()) {
+      button.textContent = "Maxed";
+      button.disabled = true;
+    } else {
+      const cost = prestigeItemCost(item);
+      button.textContent = `Buy (Cost: ${formatNumber(cost)})`;
+      button.disabled = prestigePoints < cost;
+    }
+  }
+
+  const c = prestigeUI.currentEls;
+  c.moneyBoost.textContent = `Money Boost: +${Math.round((prestigeUpgrades.moneyMult || 0) * 100)}%`;
+  c.startPoints.textContent = `Start Points: ${formatNumber(prestigeUpgrades.startPoints || 0)}`;
+  c.goldChance.textContent = `Gold Chance Bonus: +${Math.round((prestigeUpgrades.goldChance || 0) * 100)}%`;
+  c.spawnRate.textContent = `Spawn Rate: -${Math.round((1 - Math.pow(0.95, prestigeUpgrades.spawnRate || 0)) * 100)}%`;
+  c.ballSize.textContent = `Ball Size Boost: +${prestigeUpgrades.ballSize || 0}`;
+}
+
+function refreshOpenPrestigePopup() {
+  if (!prestigeUI.open) return;
+  const now = Date.now();
+  if (now - prestigeUI.lastRefresh < 250) return;
+  prestigeUI.lastRefresh = now;
+  refreshPrestigePopup();
 }
 
 /* Game Logic */
+
+const rainbowTexture = (() => {
+  const c = document.createElement("canvas");
+  c.width = 100;
+  c.height = 100;
+  const ctx = c.getContext("2d");
+  const grad = ctx.createLinearGradient(0, 0, 100, 100);
+  grad.addColorStop(0, "#ff0044");
+  grad.addColorStop(0.25, "#ff8800");
+  grad.addColorStop(0.5, "#ffee00");
+  grad.addColorStop(0.7, "#22ff66");
+  grad.addColorStop(0.85, "#2299ff");
+  grad.addColorStop(1, "#8800ff");
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(50, 50, 50, 0, Math.PI * 2);
+  ctx.fill();
+  return c.toDataURL();
+})();
 
 function spawnObject({ x, y, size } = {}) {
   const baseGoldChance = perks.has("goldBalls") ? 0.1 : 0;
   const goldChance = baseGoldChance + (prestigeUpgrades.goldChance || 0);
   const isGold = Math.random() < goldChance;
+  const rainbowChance = perks.has("rainbowBalls") ? 0.08 : 0;
+  const isRainbow = !isGold && Math.random() < rainbowChance;
 
-  const _size = size ?? Math.random() * 30 + 20 + ballSize;
+  const _size =
+    (size ?? Math.random() * 30 + 20) + ballSize + (prestigeUpgrades.ballSize || 0);
   const _x = x ?? Math.random() * (canvas.width - _size) + _size / 2;
   const _y = y ?? -_size;
 
@@ -648,10 +921,18 @@ function spawnObject({ x, y, size } = {}) {
         sprite: {
           texture: "./images/gold.png",
           xScale: _size / 333,
-          yScale: _size / 333,
-        },
+          yScale: _size / 333
+        }
       }
-    : { fillStyle: color };
+    : isRainbow
+      ? {
+          sprite: {
+            texture: rainbowTexture,
+            xScale: _size / 100,
+            yScale: _size / 100
+          }
+        }
+      : { fillStyle: color };
 
   const obj = Bodies.circle(_x, _y, _size / 2, {
     restitution: bounciness * 0.95,
@@ -659,14 +940,20 @@ function spawnObject({ x, y, size } = {}) {
     render: myRender,
     collisionFilter: {
       category: CATEGORY_UNCOLLECTED,
-      mask: CATEGORY_UNCOLLECTED | CATEGORY_COLLECTED | CATEGORY_INVISIBLE_WALL,
-    },
+      mask: CATEGORY_UNCOLLECTED | CATEGORY_COLLECTED | CATEGORY_INVISIBLE_WALL
+    }
   });
 
   obj.originSize = _size;
-  obj.pointValue = Math.floor(_size / (isGold ? 1 : 2));
+  const typeMult = isGold ? 2 : isRainbow ? 4 : 1;
+  let pointValue = Math.floor((_size / 2) * typeMult);
+  if ((isGold || isRainbow) && perks.has("richBalls")) {
+    pointValue = Math.floor(pointValue * 1.5);
+  }
+  obj.pointValue = pointValue;
   obj.collected = false;
   obj.isGold = isGold;
+  obj.isRainbow = isRainbow;
 
   World.add(world, obj);
   return obj;
@@ -679,7 +966,7 @@ for (const key in buttons) {
   const newButton = create("button", {
     disabled: value.purchaseCondition() || points < value.upgradeCost,
     id: key,
-    innerText: `${value.baseText} (Cost: ${value.upgradeCost})`,
+    innerText: `${value.baseText} (Cost: ${formatNumber(value.upgradeCost)})`
   });
 
   onClick(newButton, e => {
@@ -697,7 +984,7 @@ for (const key in buttons) {
 
     points -= value.upgradeCost;
     value.upgradeCost = Math.floor(value.upgradeCost * value.upgradeMulti);
-    newButton.innerText = `${value.baseText} (Cost: ${value.upgradeCost})`;
+    newButton.innerText = `${value.baseText} (Cost: ${formatNumber(value.upgradeCost)})`;
 
     if (value.whenPurchase) value.whenPurchase();
 
@@ -725,7 +1012,7 @@ if (savedData !== null) {
     moneyMultiplier = dataXZ.d ?? DEFAULTS.moneyMultiplier;
     platformAngle = Math.min(
       Math.max(DEFAULTS.platformAngle, dataXZ.e ?? DEFAULTS.platformAngle),
-      0.85,
+      0.85
     );
     gravity = clamp(dataXZ.f ?? DEFAULTS.gravity, 1, 3);
     bounciness = clamp(dataXZ.h ?? DEFAULTS.bounciness, 0.6, 1.1);
@@ -736,6 +1023,7 @@ if (savedData !== null) {
     prestigeLevel = dataXZ.q ?? 0;
     prestigeUpgrades = dataXZ.r ?? prestigeUpgrades;
     ballSize = clamp(dataXZ.s ?? DEFAULTS.ballSize, 0, 20);
+    lifetimePoints = dataXZ.t ?? prestigeLevel * PRESTIGE_THRESHOLD;
 
     if (dataXZ.g) {
       for (const key in dataXZ.g) {
@@ -779,22 +1067,22 @@ Events.on(engine, "collisionStart", event => {
         const ballLeft = spawnObject({
           x: object.position.x,
           y: object.position.y,
-          size: newSize,
+          size: newSize
         });
         const ballRight = spawnObject({
           x: object.position.x,
           y: object.position.y,
-          size: newSize,
+          size: newSize
         });
 
         const forceMagnitude = 0.02 * ((newSize * 1.6) / 80);
         Body.applyForce(ballLeft, ballLeft.position, {
           x: -forceMagnitude,
-          y: -forceMagnitude,
+          y: -forceMagnitude
         });
         Body.applyForce(ballRight, ballRight.position, {
           x: forceMagnitude,
-          y: -forceMagnitude,
+          y: -forceMagnitude
         });
 
         showFloatingText(object.position.x, object.position.y, "Split!", "#bd8d4f");
@@ -807,15 +1095,27 @@ Events.on(engine, "collisionStart", event => {
       object.collisionFilter.mask = CATEGORY_UNCOLLECTED | CATEGORY_COLLECTED;
 
       const baseEarn = Math.floor(
-        (object.pointValue || 1) * (moneyMultiplier * moneyHyperplier),
+        (object.pointValue || 1) * (moneyMultiplier * moneyHyperplier)
       );
-      const finalEarn = Math.floor(baseEarn * (1 + (prestigeUpgrades.moneyMult || 0)));
+      let finalEarn = Math.floor(baseEarn * (1 + (prestigeUpgrades.moneyMult || 0)));
+
+      let isCrit = false;
+      if (perks.has("critBalls") && Math.random() < 12 / 100) {
+        finalEarn *= 5;
+        isCrit = true;
+      }
 
       lastPointsEarned = finalEarn;
       points += finalEarn;
+      lifetimePoints += finalEarn;
 
       updateStuff();
-      showFloatingText(object.position.x, object.position.y, "+" + finalEarn);
+      showFloatingText(
+        object.position.x,
+        object.position.y,
+        isCrit ? `+${formatNumber(finalEarn)} CRIT!` : "+" + formatNumber(finalEarn),
+        isCrit ? "#ffd700" : undefined
+      );
     }
   }
 });
@@ -838,8 +1138,9 @@ const frameDuration = 1000 / maxFps;
   if (delta >= frameDuration) {
     lastFrame = now - (delta % frameDuration);
 
-    if (now - lastSpawn > spawnInterval) {
+    if (now - lastSpawn > effectiveSpawnInterval()) {
       spawnObject();
+      if (perks.has("doubleDrop") && Math.random() < 20 / 100) spawnObject();
       lastSpawn = now;
     }
 
@@ -879,7 +1180,7 @@ onClick(toggleButtonHolder, () => {
       () => {
         buttonHolder.style.animation = "";
       },
-      { once: true },
+      { once: true }
     );
   } else {
     buttonHolder.style.animation = "disappear 0.3s ease-in forwards";
@@ -889,7 +1190,7 @@ onClick(toggleButtonHolder, () => {
         buttonHolder.style.display = "none";
         buttonHolder.style.animation = "";
       },
-      { once: true },
+      { once: true }
     );
   }
 });
@@ -900,6 +1201,8 @@ onClick(element("openPerksShop"), () => {
   toggleButtonHolder.style.display = "none";
 });
 onClick(element("openPrestige"), () => {
+  prestigeUI.open = true;
+  prestigeUI.lastRefresh = 0;
   renderPrestigePopup();
   prestigePopup.style.display = "flex";
   buttonHolder.style.display = "none";
@@ -914,6 +1217,7 @@ onClick(element("openSettings"), () => {
 document.querySelectorAll("button.closePopup").forEach(el => {
   onClick(el, () => {
     document.querySelectorAll("div.popup").forEach(p => (p.style.display = "none"));
+    prestigeUI.open = false;
     updateCanvasSize();
   });
 });
@@ -924,10 +1228,12 @@ for (const key in perksData) {
   const perk = perksData[key];
   const button = create("button", {
     id: key,
-    innerText: `${perk.baseText} (Cost: ${perk.cost})`,
+    innerText: `${perk.baseText} (Cost: ${formatNumber(perk.cost)})`
   });
   onClick(button, () => {
     if (points < perk.cost) return alert("Not enough points for upgrade!");
+    if (prestigeLevel < (perk.requiredLevel || 0))
+      return alert(`This perk requires prestige level ${perk.requiredLevel}.`);
     if (perks.has(key)) return;
     points -= perk.cost;
     perks.add(key);
@@ -977,7 +1283,7 @@ onClick(setMusicUrlButton, () => {
       if (!wasPaused) backgroundMusic.play().catch(() => {});
       else backgroundMusic.pause();
     },
-    { once: true },
+    { once: true }
   );
 });
 
@@ -1022,7 +1328,7 @@ window.addEventListener(
       backgroundMusic.play().catch(() => {});
     }
   },
-  { once: true },
+  { once: true }
 );
 
 updateCanvasSize();
