@@ -1,8 +1,4 @@
 import {
-  SMALL_SCREEN_WIDTH,
-  ASPECT_RATIO,
-  MAX_WIDTH,
-  MAX_HEIGHT,
   CATEGORY_UNCOLLECTED,
   CATEGORY_COLLECTED,
   CATEGORY_INVISIBLE_WALL,
@@ -13,38 +9,26 @@ import {
   engine,
   world,
   canvas,
-  render,
   leftPlatform,
   rightPlatform,
   conveyor,
-  Engine,
-  Render,
   World,
   Bodies,
   Events,
   Body,
-  Runner,
   Composite
 } from "./physics.js";
 import { advancementsData, advancementCategories } from "./advancements.js";
+import { clamp, formatNumber } from "./utils.js";
+import { element, onClick, create, showFloatingText } from "./ui.js";
+import {
+  playSoundEffect,
+  isSoundEffectsEnabled,
+  setSoundEffectsEnabled
+} from "./audio.js";
+import { openPopup, closePopups, updateCanvasSize, showToast } from "./popups.js";
 
 /* DOM Elements */
-
-const element = id => document.getElementById(id);
-const onClick = (element, event) => element.addEventListener("click", event);
-const create = (tag, options = {}) => {
-  const element = document.createElement(tag);
-  for (const key in options) {
-    if (key === "style" && typeof options[key] === "object") {
-      for (const styleKey in options[key]) {
-        element.style[styleKey] = options[key][styleKey];
-      }
-    } else {
-      element[key] = options[key];
-    }
-  }
-  return element;
-};
 
 const buttonHolder = element("buttonHolder");
 const informationDiv = element("information");
@@ -74,7 +58,6 @@ var points = 0,
   perks = new Set(),
   completedAdvancements = new Set(),
   lastPointsEarned = 0,
-  soundEffectsEnabled = true,
   goldenDivorce,
   totalBallsSpawned = 0,
   critsLanded = 0,
@@ -94,32 +77,8 @@ engine.world.gravity.y = gravity;
 
 /* Save / Load */
 
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const zx = v => btoa(JSON.stringify(v)).split("").reverse().join("");
 const xz = v => JSON.parse(atob(v.split("").reverse().join("")));
-
-function formatNumber(value) {
-  const n = Math.floor(value);
-  if (!isFinite(n)) return "∞";
-  if (n < 0) return "-" + formatNumber(-n);
-
-  const tiers = [
-    { limit: 1e15, suffix: "Qa" },
-    { limit: 1e12, suffix: "T" },
-    { limit: 1e9, suffix: "B" },
-    { limit: 1e6, suffix: "M" },
-    { limit: 1e3, suffix: "K" }
-  ];
-
-  for (const tier of tiers) {
-    if (n >= tier.limit) {
-      const scaled = n / tier.limit;
-      const decimals = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
-      return scaled.toFixed(decimals) + tier.suffix;
-    }
-  }
-  return String(n);
-}
 
 function getButtonData() {
   const out = {};
@@ -284,22 +243,6 @@ for (const k in buttons) INITIAL_BUTTON_COSTS[k] = buttons[k].upgradeCost;
 
 /* Advancements */
 
-function showAdvancementPopup(title, description) {
-  if (soundEffectsEnabled) {
-    const audio = new Audio("./sounds/advancement.wav");
-    audio.volume = 1;
-    audio.play().catch(() => {});
-  }
-
-  const popup = create("div", {
-    className: "advancement-popup",
-    innerHTML: `<strong>${title}</strong><br>${description}`
-  });
-  document.body.appendChild(popup);
-
-  setTimeout(() => popup.remove(), 4000);
-}
-
 function getAdvancementState() {
   return {
     points,
@@ -326,76 +269,13 @@ function checkAdvancements() {
     if (!completedAdvancements.has(id) && advancementsData[id].check(state)) {
       completedAdvancements.add(id);
       const { name, description } = advancementsData[id];
-      showAdvancementPopup(name, description);
+      showToast(name, description);
       renderAdvancementsPopup();
     }
   }
 }
 
 /* UI Helpers */
-
-function isGUIActive() {
-  return [perksShop, settingsPopup, advancementsPopup, prestigePopup].some(
-    i => i.style.display === "flex"
-  );
-}
-
-function updateCanvasSize() {
-  const guiActive = isGUIActive();
-
-  if (window.innerWidth <= SMALL_SCREEN_WIDTH) {
-    buttonHolder.style.top = "55px";
-    toggleButtonHolder.style.display = guiActive ? "none" : "block";
-    buttonHolder.style.display = "none";
-  } else {
-    buttonHolder.style.top = "10px";
-    toggleButtonHolder.style.display = "none";
-    buttonHolder.style.display = guiActive ? "none" : "flex";
-  }
-
-  requestAnimationFrame(() => {
-    let width = Math.min(document.documentElement.clientWidth, MAX_WIDTH);
-    let height = Math.min(document.documentElement.clientHeight, MAX_HEIGHT);
-
-    if (width / height > ASPECT_RATIO) {
-      width = height * ASPECT_RATIO;
-    } else {
-      height = width / ASPECT_RATIO;
-    }
-
-    canvas.style.width = width - 10 + "px";
-    canvas.style.height = height - 10 + "px";
-  });
-}
-
-function showFloatingText(x, y, text, color) {
-  const rect = canvas.getBoundingClientRect();
-  const worldW = render.bounds.max.x - render.bounds.min.x;
-  const worldH = render.bounds.max.y - render.bounds.min.y;
-  const scaleX = rect.width / worldW;
-  const scaleY = rect.height / worldH;
-
-  const screenX = rect.left + (x - render.bounds.min.x) * scaleX;
-  const screenY = rect.top + (y - render.bounds.min.y) * scaleY;
-
-  const floatElem = create("div", {
-    className: "floating-text",
-    innerText: text,
-    style: {
-      left: screenX + "px",
-      top: screenY - 18 + "px",
-      color: color || "inherit"
-    }
-  });
-  document.body.appendChild(floatElem);
-
-  requestAnimationFrame(() => {
-    floatElem.style.transform = "translateY(-30px)";
-    floatElem.style.opacity = 0;
-  });
-
-  setTimeout(() => floatElem.remove(), 1000);
-}
 
 function effectiveSpawnInterval() {
   return Math.max(120, spawnInterval * Math.pow(0.95, prestigeUpgrades.spawnRate || 0));
@@ -678,19 +558,12 @@ function renderPrestigePopup() {
     if (gain > 0) {
       prestigePoints += gain;
       prestigeLevel += gain;
-      showAdvancementPopup(
-        "Prestige!",
-        `Gained ${gain} prestige point${gain > 1 ? "s" : ""}!`
-      );
+      showToast("Prestige!", `Gained ${gain} prestige point${gain > 1 ? "s" : ""}!`);
     }
 
     resetRun();
     refreshPrestigePopup();
-    if (soundEffectsEnabled) {
-      const audio = new Audio("./sounds/hint.wav");
-      audio.volume = 0.6;
-      audio.play().catch(() => {});
-    }
+    playSoundEffect("./sounds/hint.wav", 0.6);
   });
   content.appendChild(resetBtn);
 
@@ -731,11 +604,7 @@ function renderPrestigePopup() {
       saveGame();
       updateStuff();
       refreshPrestigePopup();
-      if (soundEffectsEnabled) {
-        const audio = new Audio("./sounds/hint.wav");
-        audio.volume = 0.6;
-        audio.play().catch(() => {});
-      }
+      playSoundEffect("./sounds/hint.wav", 0.6);
     });
 
     buyButtons.push({ button: buy, item, levelEl });
@@ -947,11 +816,7 @@ for (const key in buttons) {
 
     updateStuff();
 
-    if (soundEffectsEnabled) {
-      const audio = new Audio("./sounds/hint.wav");
-      audio.volume = 0.6;
-      audio.play().catch(() => {});
-    }
+    playSoundEffect("./sounds/hint.wav", 0.6);
   });
 
   buttonHolder.appendChild(newButton);
@@ -1156,29 +1021,22 @@ onClick(toggleButtonHolder, () => {
 });
 
 onClick(element("openPerksShop"), () => {
-  perksShop.style.display = "flex";
-  buttonHolder.style.display = "none";
-  toggleButtonHolder.style.display = "none";
+  openPopup(perksShop);
 });
 onClick(element("openPrestige"), () => {
   prestigeUI.open = true;
   prestigeUI.lastRefresh = 0;
   renderPrestigePopup();
-  prestigePopup.style.display = "flex";
-  buttonHolder.style.display = "none";
-  toggleButtonHolder.style.display = "none";
+  openPopup(prestigePopup);
 });
 onClick(element("openSettings"), () => {
-  settingsPopup.style.display = "flex";
-  buttonHolder.style.display = "none";
-  toggleButtonHolder.style.display = "none";
+  openPopup(settingsPopup);
 });
 
 document.querySelectorAll("button.closePopup").forEach(el => {
   onClick(el, () => {
-    document.querySelectorAll("div.popup").forEach(p => (p.style.display = "none"));
+    closePopups();
     prestigeUI.open = false;
-    updateCanvasSize();
   });
 });
 
@@ -1248,27 +1106,22 @@ onClick(setMusicUrlButton, () => {
 });
 
 onClick(toggleSoundEffectsButton, () => {
-  if (!soundEffectsEnabled) {
-    localStorage.setItem("effects", "true");
-    toggleSoundEffectsButton.textContent = "Disable Sound Effects";
-  } else {
-    localStorage.setItem("effects", "false");
-    toggleSoundEffectsButton.textContent = "Enable Sound Effects";
-  }
-  soundEffectsEnabled = !soundEffectsEnabled;
+  const next = !isSoundEffectsEnabled();
+  localStorage.setItem("effects", String(next));
+  setSoundEffectsEnabled(next);
+  toggleSoundEffectsButton.textContent = next
+    ? "Disable Sound Effects"
+    : "Enable Sound Effects";
 });
 
 onClick(openAdvancements, () => {
-  advancementsPopup.style.display = "flex";
-  buttonHolder.style.display = "none";
-  toggleButtonHolder.style.display = "none";
+  openPopup(advancementsPopup);
   renderAdvancementsPopup();
 });
 
 /* Init */
 
 if (localStorage.getItem("music") === null) localStorage.setItem("music", "true");
-if (localStorage.getItem("effects") === null) localStorage.setItem("effects", "true");
 
 backgroundMusic.onerror = ev => {
   ev.target.pause();
@@ -1296,7 +1149,6 @@ updateStuff();
 
 toggleMusicButton.textContent =
   localStorage.getItem("music") === "false" ? "Turn Music On" : "Turn Music Off";
-soundEffectsEnabled = localStorage.getItem("effects") !== "false";
-toggleSoundEffectsButton.textContent = soundEffectsEnabled
+toggleSoundEffectsButton.textContent = isSoundEffectsEnabled()
   ? "Disable Sound Effects"
   : "Enable Sound Effects";
