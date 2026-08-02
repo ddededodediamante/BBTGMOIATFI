@@ -285,9 +285,11 @@ for (const k in buttons) INITIAL_BUTTON_COSTS[k] = buttons[k].upgradeCost;
 /* Advancements */
 
 function showAdvancementPopup(title, description) {
-  const audio = new Audio("./sounds/advancement.wav");
-  audio.volume = 1;
-  audio.play().catch(() => {});
+  if (soundEffectsEnabled) {
+    const audio = new Audio("./sounds/advancement.wav");
+    audio.volume = 1;
+    audio.play().catch(() => {});
+  }
 
   const popup = create("div", {
     className: "advancement-popup",
