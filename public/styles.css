@@ -277,10 +277,19 @@ div.prestige-bar-fill {
   transition: width 0.3s ease;
 }
 
-div.advancement-popup {
+#advancement-toasts {
   position: fixed;
   z-index: 9999;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 8px;
   pointer-events: none;
+}
+
+div.advancement-popup {
   background-color: #dcdcdc;
   color: #222;
   border: 2px solid #858585;
@@ -288,8 +297,6 @@ div.advancement-popup {
   box-shadow: 0 0 10px #000;
   font-size: 16px;
   animation: advancement-fade 4s ease forwards;
-  bottom: 20px;
-  right: 20px;
   padding: 6px;
 }
 

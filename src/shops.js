@@ -55,10 +55,10 @@ export const prestigeShopItems = [
   {
     id: "prest_ball_size",
     name: "Bigger Balls",
-    desc: "+1 permanent ball size (max +15)",
+    desc: "+1 permanent ball size",
     cost: 3,
     costMulti: 1.3,
-    maxLevel: 20,
+    maxLevel: 15,
     requiredLevel: 6,
     whenPurchase: u => {
       u.ballSize = (u.ballSize || 0) + 1;
