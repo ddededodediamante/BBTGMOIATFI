@@ -33,7 +33,7 @@ export const perksData = {
   doubleDrop: {
     baseText: "Double Drop",
     cost: 30000,
-    description: "Adds a 20% chance of spawning a second ball",
+    description: "Adds a 15% chance of spawning a second ball",
     requiredLevel: 3
   }
 };

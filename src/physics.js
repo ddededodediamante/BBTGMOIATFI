@@ -54,7 +54,7 @@ export const rightWall = Bodies.rectangle(
 
 export const leftPlatform = Bodies.rectangle(
   100,
-  canvas.height / 3,
+  canvas.height / 3 - DEFAULTS.platformAngle * 30,
   platformWidth,
   platformHeight,
   {
@@ -66,7 +66,7 @@ export const leftPlatform = Bodies.rectangle(
 
 export const rightPlatform = Bodies.rectangle(
   canvas.width - 100,
-  canvas.height / 3,
+  canvas.height / 3 - DEFAULTS.platformAngle * 30,
   platformWidth,
   platformHeight,
   {
@@ -93,13 +93,13 @@ export const roof = Bodies.rectangle(canvas.width / 2, -100, canvas.width, 50, {
   render: { fillStyle: "#777" },
 });
 
-export const trampolineLeft = Bodies.circle(canvas.width / 2 - 130, canvas.height - 60, 30, {
+export const trampolineLeft = Bodies.rectangle(canvas.width / 2 - 180, canvas.height - 150, 60, 10, {
   isStatic: true,
   label: "trampoline",
   render: { fillStyle: "#3f9f6f" },
 });
 
-export const trampolineRight = Bodies.circle(canvas.width / 2 + 130, canvas.height - 60, 30, {
+export const trampolineRight = Bodies.rectangle(canvas.width / 2 + 180, canvas.height - 150, 60, 10, {
   isStatic: true,
   label: "trampoline",
   render: { fillStyle: "#3f9f6f" },

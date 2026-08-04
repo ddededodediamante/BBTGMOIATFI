@@ -10,6 +10,10 @@ export function Hud() {
       bold: true,
       text: `Prestige Points: ${formatNumber(s.prestigePoints)}`
     },
+    s.cosmicLevel !== 0 && {
+      bold: true,
+      text: `Cosmic Balls: ${formatNumber(s.cosmicLevel)} (x${s.cosmicGlobalMult.toFixed(2)})`
+    },
     { bold: false, text: `Lifetime Points: ${formatNumber(s.lifetimePoints)}` },
     { bold: false, text: `Spawn Delay: ${s.spawnDelay}s` },
     { bold: false, text: `Steepness: ${s.platformAngle.toFixed(2)}` },
@@ -20,10 +24,6 @@ export function Hud() {
       text: `Ball Money: x${s.moneyMultiplier.toFixed(2)}${s.moneyHyperplier !== 1 ? ` (x${s.moneyHyperplier.toFixed(2)})` : ""}`
     },
     { bold: false, text: `Gravity: x${s.gravity.toFixed(2)}` },
-    s.cosmicLevel !== 0 && {
-      bold: true,
-      text: `Cosmic Balls: ${formatNumber(s.cosmicLevel)} (x${s.cosmicGlobalMult.toFixed(2)})`
-    }
   ].filter(Boolean);
 
   return (

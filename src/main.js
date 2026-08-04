@@ -368,6 +368,15 @@ function updateStuff(force = false) {
 
   Body.setAngle(leftPlatform, platformAngle);
   Body.setAngle(rightPlatform, -platformAngle);
+  Body.setPosition(leftPlatform, {
+    x: 100,
+    y: canvas.height / 3 - platformAngle * 90
+  });
+  Body.setPosition(rightPlatform, {
+    x: canvas.width - 100,
+    y: canvas.height / 3 - platformAngle * 90
+  });
+
   engine.world.gravity.y = gravity;
 
   checkAdvancements();
@@ -549,7 +558,7 @@ function spawnObject({ x, y, size } = {}) {
         : { fillStyle: color };
 
   const obj = Bodies.circle(_x, _y, _size / 2, {
-    restitution: bounciness * 0.95,
+    restitution: bounciness * 0.8,
     label: "fallingObject",
     render: myRender,
     collisionFilter: {
@@ -671,7 +680,7 @@ function bounceBall(obj) {
   lastPointsEarned = total;
   points += total;
   lifetimePoints += total;
-  showFloatingText(obj.position.x, obj.position.y, "+" + formatNumber(total) + " Boing!", "#7fff7f");
+  showFloatingText(obj.position.x, obj.position.y, "+" + formatNumber(total), "#7fff7f");
   updateStuff();
 }
 
@@ -803,7 +812,7 @@ function autoBuy() {
 
     if (now - lastSpawn > effectiveSpawnInterval()) {
       spawnObject();
-      if (perks.has("doubleDrop") && Math.random() < 20 / 100) spawnObject();
+      if (perks.has("doubleDrop") && Math.random() < 15 / 100) spawnObject();
       lastSpawn = now;
     }
 
@@ -815,7 +824,7 @@ function autoBuy() {
           const dir = body.position.x < center ? 1 : -1;
           Body.applyForce(body, body.position, {
             x: dir * 0.02 * ((body.circleRadius || 20) / 20),
-            y: -0.02
+            y: 0.02
           });
         }
       }
@@ -885,6 +894,7 @@ function clickPerk(key) {
   points -= perk.cost;
   perks.add(key);
   updateStuff(true);
+  playSoundEffect("./sounds/hint.wav", 0.6);
 }
 
 function buyPrestigeItem(id) {
@@ -1019,5 +1029,5 @@ window.addEventListener(
 );
 
 updateCanvasSize();
-updateStuff();
+updateStuff(true);
 render(h(App), document.getElementById("app"));
