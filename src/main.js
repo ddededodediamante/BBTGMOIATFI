@@ -359,9 +359,9 @@ function buildSnapshot() {
   };
 }
 
-function updateStuff() {
+function updateStuff(force = false) {
   const now = Date.now();
-  if (now - lastUIUpdate >= 100) {
+  if (force || now - lastUIUpdate >= 100) {
     lastUIUpdate = now;
     setState(buildSnapshot());
   }
@@ -586,7 +586,7 @@ function buyUpgrade(key) {
 
   if (value.whenPurchase) value.whenPurchase();
 
-  updateStuff();
+  updateStuff(true);
   playSoundEffect("./sounds/hint.wav", 0.6);
   return true;
 }
@@ -877,7 +877,7 @@ function clickPerk(key) {
   if (perks.has(key)) return;
   points -= perk.cost;
   perks.add(key);
-  updateStuff();
+  updateStuff(true);
 }
 
 function buyPrestigeItem(id) {
@@ -891,7 +891,7 @@ function buyPrestigeItem(id) {
   prestigePoints -= cost;
   if (item.whenPurchase) item.whenPurchase(prestigeUpgrades);
   saveGame();
-  updateStuff();
+  updateStuff(true);
   playSoundEffect("./sounds/hint.wav", 0.6);
 }
 
@@ -908,7 +908,7 @@ function buyCosmicItem(id) {
   if (item.id === "cosm_springs") Composite.add(world, [trampolineLeft, trampolineRight]);
   if (item.id === "cosm_fans") Composite.add(world, [fanLeft, fanRight]);
   saveGame();
-  updateStuff();
+  updateStuff(true);
   playSoundEffect("./sounds/hint.wav", 0.6);
 }
 
