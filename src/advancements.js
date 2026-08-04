@@ -34,6 +34,13 @@ export const advancementsData = {
     sort: 1000000,
     check: s => s.points >= 1000000
   },
+  points_1b: {
+    name: "The Balls Keeper",
+    description: "Reach 1.00B points",
+    category: "points",
+    sort: 1000000000,
+    check: s => s.points >= 1000000000
+  },
   big_earner: {
     name: "Big Earner",
     description: "Earn 100 or more points in a single impact",
@@ -52,8 +59,15 @@ export const advancementsData = {
     name: "Mega Earner",
     description: "Earn 5.60K or more points in a single impact",
     category: "earnings",
-    sort: 10000,
+    sort: 5600,
     check: s => s.lastPointsEarned >= 5600
+  },
+  millionaire_earner: {
+    name: "Who Wants To Be A Millionaire?",
+    description: "Earn 1.00M or more points in a single impact",
+    category: "earnings",
+    sort: 1000000,
+    check: s => s.lastPointsEarned >= 1000000
   },
   bouncy_max: {
     name: "Super Bouncy",
@@ -151,6 +165,13 @@ export const advancementsData = {
     category: "luck",
     sort: 10,
     check: s => s.critsLanded >= 10
+  },
+  crits_100: {
+    name: "A Critical Situation",
+    description: "Land 100 critical hits",
+    category: "luck",
+    sort: 100,
+    check: s => s.critsLanded >= 100
   },
   balls_1000: {
     name: "A Lot of Balls",

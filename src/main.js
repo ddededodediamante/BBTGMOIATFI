@@ -521,7 +521,7 @@ function spawnObject({ x, y, size } = {}) {
   const isDiamond = !isGold && !isRainbow && Math.random() < diamondChance;
 
   const _size =
-    (size ?? Math.random() * 30 + 20) + ballSize + (prestigeUpgrades.ballSize || 0);
+    size ?? (Math.random() * 20 + 20) + ballSize + (prestigeUpgrades.ballSize || 0);
   const _x = x ?? Math.random() * (canvas.width - _size) + _size / 2;
   const _y = y ?? -_size;
 
@@ -665,6 +665,7 @@ window.addEventListener("storage", () => {
 /* Physics Events */
 
 function bounceBall(obj) {
+  obj.hasBounced = true;
   const speed = Math.abs(obj.velocity.y);
   Body.setVelocity(obj, {
     x: obj.velocity.x * 0.6 + (Math.random() - 0.5) * 8,
@@ -691,7 +692,7 @@ Events.on(engine, "collisionStart", event => {
       (pair.bodyB.label === "trampoline" && pair.bodyA.label === "fallingObject")
     ) {
       const obj = pair.bodyA.label === "fallingObject" ? pair.bodyA : pair.bodyB;
-      if (!obj.collected) bounceBall(obj);
+      if (!obj.collected && !obj.hasBounced) bounceBall(obj);
       continue;
     }
 
