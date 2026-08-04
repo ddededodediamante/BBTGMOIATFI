@@ -375,7 +375,14 @@ function updateStuff(force = false) {
 
 /* Prestige */
 
+function clearBalls() {
+  for (const body of [...Composite.allBodies(world)]) {
+    if (body.label === "fallingObject") World.remove(world, body);
+  }
+}
+
 function resetRun() {
+  clearBalls();
   points = 0;
   lastPointsEarned = 0;
   spawnInterval = DEFAULTS.spawnInterval;
