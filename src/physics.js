@@ -93,4 +93,36 @@ export const roof = Bodies.rectangle(canvas.width / 2, -100, canvas.width, 50, {
   render: { fillStyle: "#777" },
 });
 
+export const trampolineLeft = Bodies.circle(canvas.width / 2 - 130, canvas.height - 60, 30, {
+  isStatic: true,
+  label: "trampoline",
+  render: { fillStyle: "#3f9f6f" },
+});
+
+export const trampolineRight = Bodies.circle(canvas.width / 2 + 130, canvas.height - 60, 30, {
+  isStatic: true,
+  label: "trampoline",
+  render: { fillStyle: "#3f9f6f" },
+});
+
+export const fanLeft = Bodies.rectangle(30, canvas.height / 2, 16, 90, {
+  isStatic: true,
+  label: "fan",
+  render: { fillStyle: "#5577bb" },
+  collisionFilter: {
+    category: CATEGORY_INVISIBLE_WALL,
+    mask: CATEGORY_UNCOLLECTED,
+  },
+});
+
+export const fanRight = Bodies.rectangle(canvas.width - 30, canvas.height / 2, 16, 90, {
+  isStatic: true,
+  label: "fan",
+  render: { fillStyle: "#5577bb" },
+  collisionFilter: {
+    category: CATEGORY_INVISIBLE_WALL,
+    mask: CATEGORY_UNCOLLECTED,
+  },
+});
+
 World.add(world, [leftWall, rightWall, leftPlatform, rightPlatform, conveyor, roof]);

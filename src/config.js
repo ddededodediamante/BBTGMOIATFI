@@ -8,6 +8,9 @@ export const CATEGORY_COLLECTED = 0b10;
 export const CATEGORY_INVISIBLE_WALL = 0b100;
 
 export const PRESTIGE_THRESHOLD = 10000;
+export const COSMIC_THRESHOLD = 1000000;
+export const UNIVERSE_UNLOCK_LEVEL = 10;
+export const COSMIC_GLOBAL_PER_LEVEL = 0.5;
 
 export const DEFAULTS = {
   spawnInterval: 2000,

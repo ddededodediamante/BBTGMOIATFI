@@ -1,20 +1,6 @@
 import { render, canvas } from "./physics.js";
 
 export const element = id => document.getElementById(id);
-export const onClick = (element, event) => element.addEventListener("click", event);
-export const create = (tag, options = {}) => {
-  const element = document.createElement(tag);
-  for (const key in options) {
-    if (key === "style" && typeof options[key] === "object") {
-      for (const styleKey in options[key]) {
-        element.style[styleKey] = options[key][styleKey];
-      }
-    } else {
-      element[key] = options[key];
-    }
-  }
-  return element;
-};
 
 export function showFloatingText(x, y, text, color) {
   const rect = canvas.getBoundingClientRect();
@@ -26,15 +12,12 @@ export function showFloatingText(x, y, text, color) {
   const screenX = rect.left + (x - render.bounds.min.x) * scaleX;
   const screenY = rect.top + (y - render.bounds.min.y) * scaleY;
 
-  const floatElem = create("div", {
-    className: "floating-text",
-    innerText: text,
-    style: {
-      left: screenX + "px",
-      top: screenY - 18 + "px",
-      color: color || "inherit"
-    }
-  });
+  const floatElem = document.createElement("div");
+  floatElem.className = "floating-text";
+  floatElem.innerText = text;
+  floatElem.style.left = screenX + "px";
+  floatElem.style.top = screenY - 18 + "px";
+  floatElem.style.color = color || "inherit";
   document.body.appendChild(floatElem);
 
   requestAnimationFrame(() => {

@@ -242,6 +242,41 @@ export const advancementsData = {
     category: "lifetime",
     sort: 1000000000,
     check: s => s.lifetimePoints >= 1000000000
+  },
+  cosmic_1: {
+    name: "A New Universe",
+    description: "Enter a new universe for the first time",
+    category: "universes",
+    sort: 1,
+    check: s => s.cosmicLevel >= 1
+  },
+  cosmic_5: {
+    name: "Cosmic Explorer",
+    description: "Reach cosmic ball level 5",
+    category: "universes",
+    sort: 5,
+    check: s => s.cosmicLevel >= 5
+  },
+  cosmic_10: {
+    name: "Cosmic Voyager",
+    description: "Reach cosmic ball level 10",
+    category: "universes",
+    sort: 10,
+    check: s => s.cosmicLevel >= 10
+  },
+  cosmic_25: {
+    name: "Galactic Wanderer",
+    description: "Reach cosmic ball level 25",
+    category: "universes",
+    sort: 25,
+    check: s => s.cosmicLevel >= 25
+  },
+  cosmic_50: {
+    name: "Intergalactic Legend",
+    description: "Reach cosmic ball level 50",
+    category: "universes",
+    sort: 50,
+    check: s => s.cosmicLevel >= 50
   }
 };
 
@@ -253,5 +288,6 @@ export const advancementCategories = [
   { id: "luck", name: "Luck" },
   { id: "balls", name: "Balls" },
   { id: "prestige", name: "Prestige" },
-  { id: "lifetime", name: "Lifetime" }
+  { id: "lifetime", name: "Lifetime" },
+  { id: "universes", name: "Universes" }
 ];

@@ -28,81 +28,9 @@
 <body>
     <audio id="backgroundMusic" style="display: none;" loop src="/music/Disco con Tutti.mp3"></audio>
 
-    <div id="information">what</div>
-
-    <div class="popup" id="perksShop" style="display: none">
-        <button class="closePopup"><img src="images/x.svg"></button>
-
-        <h2>Perks Shop</h2>
-
-        <div id="perksButtonHolder" class="vertical"></div>
-    </div>
-
-    <div class="popup" id="settings" style="display: none">
-        <button class="closePopup"><img src="images/x.svg"></button>
-
-        <h2>Settings</h2>
-
-        <div>
-            <button id="toggleMusicButton">Toggle Music</button>
-            <button id="toggleSoundEffectsButton">Toggle SoundEffects</button>
-        </div>
-
-        <div>
-            <datalist id="musicPaths">
-                <option value="Disco con Tutti.mp3">
-                <option value="Meadow Thoughts.ogg">
-                <option value="Summer Park.ogg">
-                <option value="Jolly Song.m4a">
-            </datalist>
-            <input type="url" placeholder="Music URL" list="musicPaths" id="musicUrlInput">
-            <button id="setMusicUrlButton">Set Music URL</button>
-        </div>
-
-        <p>"Disco con Tutti" Kevin MacLeod (incompetech.com)<br>Licensed under Creative Commons: By <a
-                href="http://creativecommons.org/licenses/by/4.0/">Attribution 4.0 License</a></p>
-
-        <br>
-
-        <button class="red" onclick="(() => {
-            if (window.confirm(`Are you REALLY sure? You won't be able to recover this data and it will be lost FOREVER!`) === true) {
-                window.deleteAllMyData = true;
-                localStorage.removeItem('gameData');
-                window.location.reload();
-            }
-        })()">Delete all data</button>
-    </div>
-
-    <div class="popup" id="advancements" style="display: none">
-        <button class="closePopup"><img src="images/x.svg"></button>
-
-        <h2>Advancements</h2>
-
-        <div id="advancementList"></div>
-    </div>
-
-    <div class="popup" id="prestige" style="display: none">
-        <button class="closePopup"><img src="images/x.svg"></button>
-        <div id="prestigePopupContent"></div>
-    </div>
-
-    <button id="toggleButtonHolder" style="display: none;">
-        <img src="/images/menu.svg"></img>
-    </button>
-
-    <div id="buttonHolder">
-        <div class="inline">
-            <button id="openSettings">Settings</button>
-            <button id="openAdvancements">Advancements</button>
-        </div>
-        <div class="line"></div>
-        <div class="inline">
-            <button id="openPerksShop">Perks Shop</button>
-            <button id="openPrestige">Prestige</button>
-        </div>
-        <div class="line"></div>
-    </div>
     <canvas id="gameCanvas"></canvas>
+
+    <div id="app"></div>
 
     <script type="module" src="/src/main.js"></script>
 </body>

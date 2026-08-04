@@ -3,7 +3,10 @@ import {
   CATEGORY_COLLECTED,
   CATEGORY_INVISIBLE_WALL,
   PRESTIGE_THRESHOLD,
-  DEFAULTS
+  UNIVERSE_UNLOCK_LEVEL,
+  COSMIC_GLOBAL_PER_LEVEL,
+  DEFAULTS,
+  SMALL_SCREEN_WIDTH
 } from "./config.js";
 import {
   engine,
@@ -12,38 +15,46 @@ import {
   leftPlatform,
   rightPlatform,
   conveyor,
+  trampolineLeft,
+  trampolineRight,
+  fanLeft,
+  fanRight,
   World,
   Bodies,
   Events,
   Body,
   Composite
 } from "./physics.js";
-import { advancementsData, advancementCategories } from "./advancements.js";
+import { advancementsData } from "./advancements.js";
+import { perksData } from "./perks.js";
 import { clamp, formatNumber } from "./utils.js";
-import { element, onClick, create, showFloatingText } from "./ui.js";
+import { showFloatingText } from "./ui.js";
 import {
   playSoundEffect,
   isSoundEffectsEnabled,
   setSoundEffectsEnabled
 } from "./audio.js";
-import { openPopup, closePopups, updateCanvasSize, showToast } from "./popups.js";
+import { updateCanvasSize } from "./popups.js";
+import {
+  setState,
+  setActions,
+  showToast,
+  openPopup,
+  closePopups,
+  toggleButtons
+} from "./store.js";
+import {
+  prestigeShopItems,
+  cosmicShopItems,
+  prestigeItemCost,
+  cosmicItemCost,
+  grantPrestigePoints,
+  grantCosmicBalls
+} from "./shops.js";
+import { h, render } from "preact";
+import { App } from "./components/App.jsx";
 
-/* DOM Elements */
-
-const buttonHolder = element("buttonHolder");
-const informationDiv = element("information");
-const perksShop = element("perksShop");
-const settingsPopup = element("settings");
-const prestigePopup = element("prestige");
-const advancementsPopup = element("advancements");
-const perksButtonHolder = element("perksButtonHolder");
-const toggleMusicButton = element("toggleMusicButton");
-const setMusicUrlButton = element("setMusicUrlButton");
-const toggleSoundEffectsButton = element("toggleSoundEffectsButton");
-const backgroundMusic = element("backgroundMusic");
-const advancementsListDiv = element("advancementList");
-const openAdvancements = element("openAdvancements");
-const toggleButtonHolder = element("toggleButtonHolder");
+const backgroundMusic = document.getElementById("backgroundMusic");
 
 /* Game State */
 
@@ -65,12 +76,25 @@ var points = 0,
 
 var prestigePoints = 0,
   prestigeLevel = 0,
+  lifetimeBaseline = 0,
   prestigeUpgrades = {
     moneyMult: 0,
     startPoints: 0,
     goldChance: 0,
     spawnRate: 0,
     ballSize: 0
+  };
+
+var cosmicLevel = 0,
+  cosmicPoints = 0,
+  cosmicUpgrades = {
+    startPoints: 0,
+    diamondChance: 0,
+    critChance: 0,
+    caps: 0,
+    autoBuyer: false,
+    springs: false,
+    fans: false
   };
 
 engine.world.gravity.y = gravity;
@@ -106,7 +130,11 @@ function saveGame() {
       s: ballSize,
       t: lifetimePoints,
       u: totalBallsSpawned,
-      v: critsLanded
+      v: critsLanded,
+      w: cosmicLevel,
+      x: cosmicPoints,
+      y: cosmicUpgrades,
+      z: lifetimeBaseline
     })
   );
 }
@@ -173,7 +201,7 @@ const buttons = {
     whenPurchase: () => {
       ballSize += 2;
     },
-    purchaseCondition: () => ballSize < 20
+    purchaseCondition: () => ballSize < maxBallSize()
   },
   upgradeGravity: {
     baseText: "Increment Gravity",
@@ -182,7 +210,7 @@ const buttons = {
     whenPurchase: () => {
       gravity += 0.2;
     },
-    purchaseCondition: () => gravity < 3
+    purchaseCondition: () => gravity < maxGravity()
   },
   upgradeBounciness: {
     baseText: () => (bounciness < 1.1 ? "+0.1 Bouncy & Hyperplier" : "+0.1 Hyperplier"),
@@ -190,53 +218,13 @@ const buttons = {
     upgradeMulti: 1.75,
     whenPurchase: () => {
       if (bounciness < 1.1) bounciness += 0.1;
-      moneyHyperplier += 0.1;
+      moneyHyperplier = Math.min(2, moneyHyperplier + 0.1);
     },
     purchaseCondition: () => moneyHyperplier < 2
   }
 };
 
 /* Perks */
-
-const perksData = {
-  goldBalls: {
-    baseText: "Gold Balls",
-    cost: 2400,
-    description: "Adds a 10% chance of a ball spawning as gold (x2.5 value)"
-  },
-  fastConveyor: {
-    baseText: "Fast Conveyor",
-    cost: 3000,
-    description: "Doubles the conveyor belt speed"
-  },
-  splitBalls: {
-    baseText: "Split Balls",
-    cost: 5000,
-    description: "Adds a 9% chance of a ball splitting on impact"
-  },
-  rainbowBalls: {
-    baseText: "Rainbow Balls",
-    cost: 9000,
-    description: "Adds an 8% chance of a ball spawning as rainbow (x4 value)"
-  },
-  richBalls: {
-    baseText: "Lucky Gold",
-    cost: 15000,
-    description: "Gold and rainbow balls are worth 50% more"
-  },
-  critBalls: {
-    baseText: "Critical Balls",
-    cost: 23000,
-    description: "Adds a 12% chance of a critical hit (x5 points)",
-    requiredLevel: 1
-  },
-  doubleDrop: {
-    baseText: "Double Drop",
-    cost: 30000,
-    description: "Adds a 20% chance of spawning a second ball",
-    requiredLevel: 3
-  }
-};
 
 const INITIAL_BUTTON_COSTS = {};
 for (const k in buttons) INITIAL_BUTTON_COSTS[k] = buttons[k].upgradeCost;
@@ -259,7 +247,8 @@ function getAdvancementState() {
     perksData,
     goldenDivorce,
     totalBallsSpawned,
-    critsLanded
+    critsLanded,
+    cosmicLevel
   };
 }
 
@@ -270,45 +259,45 @@ function checkAdvancements() {
       completedAdvancements.add(id);
       const { name, description } = advancementsData[id];
       showToast(name, description);
-      renderAdvancementsPopup();
     }
   }
 }
 
 /* UI Helpers */
 
-function effectiveSpawnInterval() {
-  return Math.max(120, spawnInterval * Math.pow(0.95, prestigeUpgrades.spawnRate || 0));
+function cosmicGlobalMult() {
+  return 1 + cosmicLevel * COSMIC_GLOBAL_PER_LEVEL;
 }
 
-function updateStuff({ onlyInformation = false } = {}) {
-  const information = [
-    `<strong>Points: ${formatNumber(points)}</strong>`,
-    prestigeLevel !== 0 &&
-      `<strong>Prestige Points: ${formatNumber(prestigePoints)}</strong>`,
-    `Lifetime Points: ${formatNumber(lifetimePoints)}`,
-    `Spawn Delay: ${(effectiveSpawnInterval() / 1000).toFixed(2)}s`,
-    `Steepness: ${platformAngle.toFixed(2)}`,
-    `Ball Bounciness: ${bounciness.toFixed(2)}`,
-    `Ball Size: +${ballSize.toFixed(2)}`,
-    `Ball Money: x${moneyMultiplier.toFixed(2)}${moneyHyperplier !== 1 ? ` (x${moneyHyperplier.toFixed(2)})` : ""}`,
-    `Gravity: x${gravity.toFixed(2)}`
-  ].filter(Boolean);
-  informationDiv.innerHTML = information.join("<br>");
+function spawnFloor() {
+  return Math.max(120 * Math.pow(0.8, cosmicUpgrades.caps || 0), 40);
+}
 
-  if (onlyInformation) return;
+function maxGravity() {
+  return 3 + (cosmicUpgrades.caps || 0);
+}
 
-  Body.setAngle(leftPlatform, platformAngle);
-  Body.setAngle(rightPlatform, -platformAngle);
-  engine.world.gravity.y = gravity;
+function maxBallSize() {
+  return 20 + (cosmicUpgrades.caps || 0) * 5;
+}
 
+function effectiveSpawnInterval() {
+  return Math.max(
+    spawnFloor(),
+    spawnInterval * Math.pow(0.95, prestigeUpgrades.spawnRate || 0)
+  );
+}
+
+let lastUIUpdate = 0;
+
+function buildSnapshot() {
+  const buttonsState = {};
   for (const key in buttons) {
     const value = buttons[key];
-    const button = value.element || (value.element = element(key));
 
     let condition;
     try {
-      condition = value.purchaseCondition();
+      condition = value.purchaseCondition() === true;
     } catch (_) {
       condition = false;
     }
@@ -316,155 +305,75 @@ function updateStuff({ onlyInformation = false } = {}) {
     const baseText =
       typeof value.baseText === "function" ? value.baseText() : value.baseText;
 
-    if (condition === true) {
-      button.innerText = `${baseText} (Cost: ${formatNumber(value.upgradeCost)})`;
-      button.disabled = points < value.upgradeCost;
-    } else {
-      button.innerText = `${baseText} (Unavailable)`;
-      button.disabled = true;
-    }
+    buttonsState[key] = condition
+      ? {
+          text: `${baseText} (Cost: ${formatNumber(value.upgradeCost)})`,
+          disabled: points < value.upgradeCost
+        }
+      : { text: `${baseText} (Unavailable)`, disabled: true };
   }
 
+  const perksState = {};
   for (const key in perksData) {
     const perk = perksData[key];
-    if (!perk.element) continue;
     if (perks.has(key)) {
-      perk.element.innerText = `${perk.baseText} (Obtained)`;
-      perk.element.disabled = true;
+      perksState[key] = { text: `${perk.baseText} (Obtained)`, disabled: true };
     } else if (prestigeLevel < (perk.requiredLevel || 0)) {
-      perk.element.innerText = `${perk.baseText} (Requires Prestige Level ${perk.requiredLevel})`;
-      perk.element.disabled = true;
+      perksState[key] = {
+        text: `${perk.baseText} (Requires Prestige Level ${perk.requiredLevel})`,
+        disabled: true
+      };
     } else {
-      perk.element.innerText = `${perk.baseText} (Cost: ${formatNumber(perk.cost)})`;
-      perk.element.disabled = points < perk.cost;
+      perksState[key] = {
+        text: `${perk.baseText} (Cost: ${formatNumber(perk.cost)})`,
+        disabled: points < perk.cost
+      };
     }
   }
 
-  checkAdvancements();
-  refreshOpenPrestigePopup();
+  return {
+    points,
+    lifetimePoints,
+    lastPointsEarned,
+    prestigePoints,
+    prestigeLevel,
+    cosmicPoints,
+    cosmicLevel,
+    lifetimeBaseline,
+    spawnDelay: (effectiveSpawnInterval() / 1000).toFixed(2),
+    platformAngle,
+    bounciness,
+    ballSize,
+    moneyMultiplier,
+    moneyHyperplier,
+    gravity,
+    cosmicGlobalMult: cosmicGlobalMult(),
+    perks: new Set(perks),
+    completedAdvancements: new Set(completedAdvancements),
+    prestigeUpgrades: { ...prestigeUpgrades },
+    cosmicUpgrades: { ...cosmicUpgrades },
+    buttons: buttonsState,
+    perksUi: perksState,
+    musicOn: localStorage.getItem("music") !== "false",
+    soundOn: isSoundEffectsEnabled()
+  };
 }
 
-function renderAdvancementsPopup() {
-  advancementsListDiv.innerHTML = "";
-
-  for (const cat of advancementCategories) {
-    const categoryEl = create("div", { className: "advancement-category" });
-    categoryEl.appendChild(
-      create("h3", { textContent: cat.name, className: "advancement-label" })
-    );
-
-    const grid = create("div", { className: "advancement-grid" });
-    const items = Object.keys(advancementsData)
-      .filter(id => (advancementsData[id].category || "") === cat.id)
-      .sort((a, b) => (advancementsData[a].sort ?? 0) - (advancementsData[b].sort ?? 0));
-
-    for (const id of items) {
-      const adv = advancementsData[id];
-      const isDone = completedAdvancements.has(id);
-
-      const el = create("div", {
-        className: "advancement-list",
-        innerHTML: `<strong>${adv.name}</strong><br><small>${adv.description}</small>`
-      });
-      if (isDone) el.classList.add("done");
-      grid.appendChild(el);
-    }
-
-    categoryEl.appendChild(grid);
-    advancementsListDiv.appendChild(categoryEl);
+function updateStuff() {
+  const now = Date.now();
+  if (now - lastUIUpdate >= 100) {
+    lastUIUpdate = now;
+    setState(buildSnapshot());
   }
+
+  Body.setAngle(leftPlatform, platformAngle);
+  Body.setAngle(rightPlatform, -platformAngle);
+  engine.world.gravity.y = gravity;
+
+  checkAdvancements();
 }
 
 /* Prestige */
-
-const prestigeShopItems = [
-  {
-    id: "prest_money_boost",
-    name: "Money Boost",
-    desc: "+20% permanent earnings",
-    cost: 1,
-    costMulti: 1.35,
-    requiredLevel: 0,
-    whenPurchase: () => {
-      prestigeUpgrades.moneyMult = (prestigeUpgrades.moneyMult || 0) + 0.2;
-    },
-    condition: () => true
-  },
-  {
-    id: "prest_start_points",
-    name: "Start Points",
-    desc: "+400 points at the start of each run",
-    cost: 2,
-    costMulti: 1.1,
-    requiredLevel: 0,
-    whenPurchase: () => {
-      prestigeUpgrades.startPoints = (prestigeUpgrades.startPoints || 0) + 400;
-    },
-    condition: () => true
-  },
-  {
-    id: "prest_gold_chance",
-    name: "Gold Chance",
-    desc: "+5% gold spawn chance (max +40%)",
-    cost: 3,
-    costMulti: 1.6,
-    maxLevel: 10,
-    requiredLevel: 0,
-    whenPurchase: () => {
-      prestigeUpgrades.goldChance = (prestigeUpgrades.goldChance || 0) + 0.05;
-    },
-    condition: () => (prestigeUpgrades.goldChance || 0) < 0.4
-  },
-  {
-    id: "prest_spawn_rate",
-    name: "Faster Spawning",
-    desc: "-5% spawn delay, permanent (max 20)",
-    cost: 2,
-    costMulti: 1.45,
-    maxLevel: 20,
-    requiredLevel: 3,
-    whenPurchase: () => {
-      prestigeUpgrades.spawnRate = (prestigeUpgrades.spawnRate || 0) + 1;
-    },
-    condition: () => (prestigeUpgrades.spawnRate || 0) < 20
-  },
-  {
-    id: "prest_ball_size",
-    name: "Bigger Balls",
-    desc: "+1 permanent ball size (max +15)",
-    cost: 3,
-    costMulti: 1.3,
-    maxLevel: 20,
-    requiredLevel: 6,
-    whenPurchase: () => {
-      prestigeUpgrades.ballSize = (prestigeUpgrades.ballSize || 0) + 1;
-    },
-    condition: () => (prestigeUpgrades.ballSize || 0) < 15
-  }
-];
-
-function prestigeItemLevel(item) {
-  const u = prestigeUpgrades;
-  switch (item.id) {
-    case "prest_money_boost":
-      return Math.round((u.moneyMult || 0) / 0.2);
-    case "prest_start_points":
-      return Math.round((u.startPoints || 0) / 400);
-    case "prest_gold_chance":
-      return Math.round((u.goldChance || 0) / 0.05);
-    case "prest_spawn_rate":
-      return u.spawnRate || 0;
-    case "prest_ball_size":
-      return u.ballSize || 0;
-    default:
-      return 0;
-  }
-}
-
-function prestigeItemCost(item) {
-  const level = prestigeItemLevel(item);
-  return Math.floor(item.cost * Math.pow(item.costMulti || 1, level));
-}
 
 function resetRun() {
   points = 0;
@@ -480,225 +389,67 @@ function resetRun() {
 
   for (const k in buttons) {
     buttons[k].upgradeCost = INITIAL_BUTTON_COSTS[k];
-    if (buttons[k].element) {
-      const baseText =
-        typeof buttons[k].baseText === "function"
-          ? buttons[k].baseText()
-          : buttons[k].baseText;
-      buttons[k].element.innerText =
-        `${baseText} (Cost: ${formatNumber(buttons[k].upgradeCost)})`;
-    }
   }
 
   if (prestigeUpgrades.startPoints) points += prestigeUpgrades.startPoints;
+  if (cosmicUpgrades.startPoints) points += cosmicUpgrades.startPoints;
 
   saveGame();
   updateStuff();
 }
 
-function grantPrestigePoints() {
-  const gain = Math.floor(lifetimePoints / PRESTIGE_THRESHOLD) - prestigeLevel;
-  return Math.max(0, gain);
-}
-
-const prestigeUI = {
-  open: false,
-  lastRefresh: 0,
-  el: {},
-  currentEls: {},
-  buyButtons: []
-};
-
-function prestigeProgress() {
-  const unclaimed = grantPrestigePoints();
-  const segmentStart = (prestigeLevel + unclaimed) * PRESTIGE_THRESHOLD;
-  const nextAt = segmentStart + PRESTIGE_THRESHOLD;
-  const progress = clamp((lifetimePoints - segmentStart) / PRESTIGE_THRESHOLD, 0, 1);
-  return { unclaimed, nextAt, progress };
-}
-
-function renderPrestigePopup() {
-  const content = element("prestigePopupContent");
-  content.innerHTML = "";
-
-  const h = create("h2", {
-    textContent: "Prestige"
-  });
-  content.appendChild(h);
-
-  const info = create("div", {
-    innerHTML: `
-    <p>Prestige points come from your <strong>lifetime points</strong> (1 per ${formatNumber(PRESTIGE_THRESHOLD)} earned across all runs). They are claimed when you reset the run.</p>
-    <p>Lifetime Points: <strong id="prLifetime"></strong></p>
-    <p>Prestige Level: <strong id="prLevel"></strong></p>
-    <p>Spendable Prestige Points: <strong id="prSpendable"></strong></p>
-    <p>Next prestige point at <strong id="prNext"></strong> lifetime points (<strong id="prPct"></strong>)</p>
-  `,
-    style: {
-      marginBottom: "10px"
-    }
-  });
-  content.appendChild(info);
-
-  const bar = create("div", { className: "prestige-bar" });
-  const barFill = create("div", { className: "prestige-bar-fill" });
-  bar.appendChild(barFill);
-  content.appendChild(bar);
-
-  const resetBtn = create("button");
-  onClick(resetBtn, () => {
-    const gain = grantPrestigePoints();
-    if (
-      !confirm(
-        `Reset your current run and ${gain > 0 ? `claim ${gain} prestige point${gain > 1 ? "s" : ""}` : "claim no prestige points"}? Points, upgrades and perks reset, but permanent upgrades are kept.`
-      )
+function claimPrestige() {
+  const gain = grantPrestigePoints(lifetimePoints, lifetimeBaseline, prestigeLevel);
+  if (
+    !confirm(
+      `Reset your current run and ${gain > 0 ? `claim ${gain} prestige point${gain > 1 ? "s" : ""}` : "claim no prestige points"}? Points, upgrades and perks reset, but permanent upgrades are kept.`
     )
-      return;
+  )
+    return;
 
-    if (gain > 0) {
-      prestigePoints += gain;
-      prestigeLevel += gain;
-      showToast("Prestige!", `Gained ${gain} prestige point${gain > 1 ? "s" : ""}!`);
-    }
-
-    resetRun();
-    refreshPrestigePopup();
-    playSoundEffect("./sounds/hint.wav", 0.6);
-  });
-  content.appendChild(resetBtn);
-
-  const shopContainer = create("div", {
-    className: "prestigeShopDiv"
-  });
-
-  const shopTitle = create("div", {
-    innerHTML: `<h3>Prestige Shop</h3><p>Buy permanent upgrades using Prestige Points.</p>`
-  });
-  shopContainer.appendChild(shopTitle);
-
-  const shopList = create("div", {
-    className: "vertical"
-  });
-
-  const buyButtons = [];
-
-  for (const item of prestigeShopItems) {
-    const row = create("div", { className: "prestigeShopItem" });
-    const info = create("div");
-    info.appendChild(create("strong", { textContent: item.name }));
-    info.appendChild(create("br"));
-    info.appendChild(create("small", { textContent: item.desc }));
-    const levelEl = create("div", { className: "prestigeShopLevel" });
-    info.appendChild(levelEl);
-    row.appendChild(info);
-
-    const buy = create("button");
-    onClick(buy, () => {
-      const cost = prestigeItemCost(item);
-      if (item.requiredLevel > prestigeLevel)
-        return alert(`Requires prestige level ${item.requiredLevel}.`);
-      if (prestigePoints < cost) return alert("Not enough prestige points.");
-      if (!item.condition()) return alert("You can't buy this right now.");
-      prestigePoints -= cost;
-      if (item.whenPurchase) item.whenPurchase();
-      saveGame();
-      updateStuff();
-      refreshPrestigePopup();
-      playSoundEffect("./sounds/hint.wav", 0.6);
-    });
-
-    buyButtons.push({ button: buy, item, levelEl });
-    row.appendChild(buy);
-    shopList.appendChild(row);
+  if (gain > 0) {
+    prestigePoints += gain;
+    prestigeLevel += gain;
+    showToast("Prestige!", `Gained ${gain} prestige point${gain > 1 ? "s" : ""}!`);
   }
 
-  shopContainer.appendChild(shopList);
-
-  const current = create("div", {
-    innerHTML: `
-    <h3>Current Prestige Upgrades</h3>
-    <p id="prMoneyBoost"></p>
-    <p id="prStartPoints"></p>
-    <p id="prGoldChance"></p>
-    <p id="prSpawnRate"></p>
-    <p id="prBallSize"></p>
-  `
-  });
-  shopContainer.appendChild(current);
-  content.appendChild(shopContainer);
-
-  prestigeUI.el = {
-    lifetime: element("prLifetime"),
-    level: element("prLevel"),
-    spendable: element("prSpendable"),
-    next: element("prNext"),
-    pct: element("prPct"),
-    barFill,
-    resetBtn
-  };
-  prestigeUI.currentEls = {
-    moneyBoost: element("prMoneyBoost"),
-    startPoints: element("prStartPoints"),
-    goldChance: element("prGoldChance"),
-    spawnRate: element("prSpawnRate"),
-    ballSize: element("prBallSize")
-  };
-  prestigeUI.buyButtons = buyButtons;
-
-  refreshPrestigePopup();
+  resetRun();
+  playSoundEffect("./sounds/hint.wav", 0.6);
 }
 
-function refreshPrestigePopup() {
-  const el = prestigeUI.el;
-  if (!el.lifetime) return;
+/* Universes */
 
-  const { unclaimed, nextAt, progress } = prestigeProgress();
-
-  el.lifetime.textContent = formatNumber(lifetimePoints);
-  el.level.textContent = formatNumber(prestigeLevel);
-  el.spendable.textContent = formatNumber(prestigePoints);
-  el.next.textContent = formatNumber(nextAt);
-  el.pct.textContent = Math.round(progress * 100) + "%";
-  el.barFill.style.width = Math.round(progress * 100) + "%";
-  el.resetBtn.textContent =
-    unclaimed > 0
-      ? `Reset Run (Claim ${formatNumber(unclaimed)} Prestige Point${unclaimed > 1 ? "s" : ""})`
-      : "Reset Run (No Prestige Points to Claim)";
-
-  for (const { button, item, levelEl } of prestigeUI.buyButtons) {
-    const isGated = item.requiredLevel > prestigeLevel;
-    const level = prestigeItemLevel(item);
-    levelEl.textContent = item.maxLevel
-      ? `Level ${level} / ${item.maxLevel}`
-      : `Level ${level}`;
-
-    if (isGated) {
-      button.textContent = `Unlocks at Prestige Level ${item.requiredLevel}`;
-      button.disabled = true;
-    } else if (!item.condition()) {
-      button.textContent = "Maxed";
-      button.disabled = true;
-    } else {
-      const cost = prestigeItemCost(item);
-      button.textContent = `Buy (Cost: ${formatNumber(cost)})`;
-      button.disabled = prestigePoints < cost;
-    }
+function enterNewUniverse() {
+  if (prestigeLevel < UNIVERSE_UNLOCK_LEVEL) {
+    return alert(`Entering a new universe requires prestige level ${UNIVERSE_UNLOCK_LEVEL}.`);
   }
+  const gain = grantCosmicBalls(lifetimePoints, cosmicLevel);
+  if (gain <= 0) return;
 
-  const c = prestigeUI.currentEls;
-  c.moneyBoost.textContent = `Money Boost: +${Math.round((prestigeUpgrades.moneyMult || 0) * 100)}%`;
-  c.startPoints.textContent = `Start Points: ${formatNumber(prestigeUpgrades.startPoints || 0)}`;
-  c.goldChance.textContent = `Gold Chance Bonus: +${Math.round((prestigeUpgrades.goldChance || 0) * 100)}%`;
-  c.spawnRate.textContent = `Spawn Rate: -${Math.round((1 - Math.pow(0.95, prestigeUpgrades.spawnRate || 0)) * 100)}%`;
-  c.ballSize.textContent = `Ball Size Boost: +${prestigeUpgrades.ballSize || 0}`;
-}
+  if (
+    !confirm(
+      `Enter a new universe? This resets your run AND prestige level, prestige upgrades and prestige points, granting ${gain} cosmic ball${gain > 1 ? "s" : ""}. Lifetime points and advancements are kept.`
+    )
+  )
+    return;
 
-function refreshOpenPrestigePopup() {
-  if (!prestigeUI.open) return;
-  const now = Date.now();
-  if (now - prestigeUI.lastRefresh < 250) return;
-  prestigeUI.lastRefresh = now;
-  refreshPrestigePopup();
+  lifetimeBaseline = lifetimePoints;
+  prestigePoints = 0;
+  prestigeLevel = 0;
+  prestigeUpgrades = {
+    moneyMult: 0,
+    startPoints: 0,
+    goldChance: 0,
+    spawnRate: 0,
+    ballSize: 0
+  };
+
+  cosmicPoints += gain;
+  cosmicLevel += gain;
+
+  resetRun();
+  playSoundEffect("./sounds/hint.wav", 0.6);
+  showToast("New Universe!", `Gained ${gain} cosmic ball${gain > 1 ? "s" : ""}!`);
 }
 
 /* Game Logic */
@@ -722,6 +473,26 @@ const rainbowTexture = (() => {
   return c.toDataURL();
 })();
 
+const diamondTexture = (() => {
+  const c = document.createElement("canvas");
+  c.width = 100;
+  c.height = 100;
+  const ctx = c.getContext("2d");
+  const grad = ctx.createRadialGradient(38, 32, 5, 50, 50, 52);
+  grad.addColorStop(0, "#ffffff");
+  grad.addColorStop(0.45, "#cfe6ff");
+  grad.addColorStop(1, "#3f7fff");
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(50, 50, 50, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  ctx.beginPath();
+  ctx.arc(38, 32, 12, 0, Math.PI * 2);
+  ctx.fill();
+  return c.toDataURL();
+})();
+
 function spawnObject({ x, y, size } = {}) {
   totalBallsSpawned++;
 
@@ -730,6 +501,8 @@ function spawnObject({ x, y, size } = {}) {
   const isGold = Math.random() < goldChance;
   const rainbowChance = perks.has("rainbowBalls") ? 0.08 : 0;
   const isRainbow = !isGold && Math.random() < rainbowChance;
+  const diamondChance = cosmicUpgrades.diamondChance || 0;
+  const isDiamond = !isGold && !isRainbow && Math.random() < diamondChance;
 
   const _size =
     (size ?? Math.random() * 30 + 20) + ballSize + (prestigeUpgrades.ballSize || 0);
@@ -758,7 +531,15 @@ function spawnObject({ x, y, size } = {}) {
             yScale: _size / 100
           }
         }
-      : { fillStyle: color };
+      : isDiamond
+        ? {
+            sprite: {
+              texture: diamondTexture,
+              xScale: _size / 100,
+              yScale: _size / 100
+            }
+          }
+        : { fillStyle: color };
 
   const obj = Bodies.circle(_x, _y, _size / 2, {
     restitution: bounciness * 0.95,
@@ -771,7 +552,7 @@ function spawnObject({ x, y, size } = {}) {
   });
 
   obj.originSize = _size;
-  const typeMult = isGold ? 2 : isRainbow ? 4 : 1;
+  const typeMult = isGold ? 2 : isRainbow ? 4 : isDiamond ? 8 : 1;
   let pointValue = Math.floor((_size / 2) * typeMult);
   if ((isGold || isRainbow) && perks.has("richBalls")) {
     pointValue = Math.floor(pointValue * 1.5);
@@ -780,6 +561,7 @@ function spawnObject({ x, y, size } = {}) {
   obj.collected = false;
   obj.isGold = isGold;
   obj.isRainbow = isRainbow;
+  obj.isDiamond = isDiamond;
 
   World.add(world, obj);
   return obj;
@@ -787,40 +569,26 @@ function spawnObject({ x, y, size } = {}) {
 
 /* Upgrade Buttons */
 
-for (const key in buttons) {
+function buyUpgrade(key) {
   const value = buttons[key];
-  const newButton = create("button", {
-    disabled: value.purchaseCondition() || points < value.upgradeCost,
-    id: key,
-    innerText: `${value.baseText} (Cost: ${formatNumber(value.upgradeCost)})`
-  });
+  if (!value) return false;
 
-  onClick(newButton, e => {
-    if (!e.isTrusted || newButton.disabled) return;
+  let ok;
+  try {
+    ok = value.purchaseCondition() === true;
+  } catch (_) {
+    ok = false;
+  }
+  if (!ok || points < value.upgradeCost) return false;
 
-    if (points < value.upgradeCost) {
-      alert("Not enough points for upgrade!");
-      return;
-    }
+  points -= value.upgradeCost;
+  value.upgradeCost = Math.floor(value.upgradeCost * value.upgradeMulti);
 
-    if (!value.purchaseCondition()) {
-      alert("You cannot purchase this upgrade right now!");
-      return;
-    }
+  if (value.whenPurchase) value.whenPurchase();
 
-    points -= value.upgradeCost;
-    value.upgradeCost = Math.floor(value.upgradeCost * value.upgradeMulti);
-    newButton.innerText = `${value.baseText} (Cost: ${formatNumber(value.upgradeCost)})`;
-
-    if (value.whenPurchase) value.whenPurchase();
-
-    updateStuff();
-
-    playSoundEffect("./sounds/hint.wav", 0.6);
-  });
-
-  buttonHolder.appendChild(newButton);
-  value.element = newButton;
+  updateStuff();
+  playSoundEffect("./sounds/hint.wav", 0.6);
+  return true;
 }
 
 /* Load Save */
@@ -836,18 +604,25 @@ if (savedData !== null) {
       Math.max(DEFAULTS.platformAngle, dataXZ.e ?? DEFAULTS.platformAngle),
       0.85
     );
-    gravity = clamp(dataXZ.f ?? DEFAULTS.gravity, 1, 3);
+    prestigePoints = dataXZ.p ?? 0;
+    prestigeLevel = dataXZ.q ?? 0;
+    prestigeUpgrades = dataXZ.r ?? prestigeUpgrades;
+    cosmicLevel = dataXZ.w ?? 0;
+    cosmicPoints = dataXZ.x ?? 0;
+    cosmicUpgrades = dataXZ.y ?? cosmicUpgrades;
+    lifetimeBaseline = dataXZ.z ?? 0;
+    gravity = clamp(dataXZ.f ?? DEFAULTS.gravity, 1, maxGravity());
     bounciness = clamp(dataXZ.h ?? DEFAULTS.bounciness, 0.6, 1.1);
     moneyHyperplier = clamp(dataXZ.i ?? DEFAULTS.moneyHyperplier, 1, 2);
     perks = new Set([...(dataXZ.j ?? [])]);
     completedAdvancements = new Set([...(dataXZ.k ?? [])]);
-    prestigePoints = dataXZ.p ?? 0;
-    prestigeLevel = dataXZ.q ?? 0;
-    prestigeUpgrades = dataXZ.r ?? prestigeUpgrades;
-    ballSize = clamp(dataXZ.s ?? DEFAULTS.ballSize, 0, 20);
+    ballSize = clamp(dataXZ.s ?? DEFAULTS.ballSize, 0, maxBallSize());
     lifetimePoints = dataXZ.t ?? prestigeLevel * PRESTIGE_THRESHOLD;
     totalBallsSpawned = dataXZ.u ?? 0;
     critsLanded = dataXZ.v ?? 0;
+
+    if (cosmicUpgrades.springs) Composite.add(world, [trampolineLeft, trampolineRight]);
+    if (cosmicUpgrades.fans) Composite.add(world, [fanLeft, fanRight]);
 
     if (dataXZ.g) {
       for (const key in dataXZ.g) {
@@ -873,8 +648,37 @@ window.addEventListener("storage", () => {
 
 /* Physics Events */
 
+function bounceBall(obj) {
+  const speed = Math.abs(obj.velocity.y);
+  Body.setVelocity(obj, {
+    x: obj.velocity.x * 0.6 + (Math.random() - 0.5) * 8,
+    y: -Math.max(11, speed * 0.85)
+  });
+  const total = Math.floor(
+    (obj.pointValue || 1) *
+      (1 + speed / 8) *
+      (moneyMultiplier * moneyHyperplier) *
+      (1 + (prestigeUpgrades.moneyMult || 0)) *
+      cosmicGlobalMult()
+  );
+  lastPointsEarned = total;
+  points += total;
+  lifetimePoints += total;
+  showFloatingText(obj.position.x, obj.position.y, "+" + formatNumber(total) + " Boing!", "#7fff7f");
+  updateStuff();
+}
+
 Events.on(engine, "collisionStart", event => {
   for (const pair of event.pairs) {
+    if (
+      (pair.bodyA.label === "trampoline" && pair.bodyB.label === "fallingObject") ||
+      (pair.bodyB.label === "trampoline" && pair.bodyA.label === "fallingObject")
+    ) {
+      const obj = pair.bodyA.label === "fallingObject" ? pair.bodyA : pair.bodyB;
+      if (!obj.collected) bounceBall(obj);
+      continue;
+    }
+
     let object = null;
     if (pair.bodyA.label === "conveyor" && pair.bodyB.label === "fallingObject")
       object = pair.bodyB;
@@ -921,10 +725,14 @@ Events.on(engine, "collisionStart", event => {
       const baseEarn = Math.floor(
         (object.pointValue || 1) * (moneyMultiplier * moneyHyperplier)
       );
-      let finalEarn = Math.floor(baseEarn * (1 + (prestigeUpgrades.moneyMult || 0)));
+      let finalEarn = Math.floor(
+        baseEarn *
+          (1 + (prestigeUpgrades.moneyMult || 0)) *
+          cosmicGlobalMult()
+      );
 
       let isCrit = false;
-      if (perks.has("critBalls") && Math.random() < 12 / 100) {
+      if (perks.has("critBalls") && Math.random() < 0.12 + (cosmicUpgrades.critChance || 0)) {
         finalEarn *= 5;
         isCrit = true;
         critsLanded++;
@@ -953,8 +761,31 @@ Events.on(engine, "beforeUpdate", () => {
 
 let lastSpawn = Date.now();
 let lastFrame = Date.now();
+let lastFanGust = 0;
+let lastAutoBuy = 0;
 const maxFps = 60;
 const frameDuration = 1000 / maxFps;
+const FAN_GUST_INTERVAL = 3000;
+const AUTO_BUY_INTERVAL = 4000;
+
+function autoBuy() {
+  let bestKey = null;
+  let bestCost = Infinity;
+  for (const key in buttons) {
+    const v = buttons[key];
+    let ok;
+    try {
+      ok = v.purchaseCondition() === true;
+    } catch (_) {
+      ok = false;
+    }
+    if (ok && v.upgradeCost <= points && v.upgradeCost < bestCost) {
+      bestCost = v.upgradeCost;
+      bestKey = key;
+    }
+  }
+  if (bestKey) buyUpgrade(bestKey);
+}
 
 (function gameLoop() {
   const now = Date.now();
@@ -967,6 +798,25 @@ const frameDuration = 1000 / maxFps;
       spawnObject();
       if (perks.has("doubleDrop") && Math.random() < 20 / 100) spawnObject();
       lastSpawn = now;
+    }
+
+    if (cosmicUpgrades.fans && now - lastFanGust > FAN_GUST_INTERVAL) {
+      lastFanGust = now;
+      const center = canvas.width / 2;
+      for (const body of Composite.allBodies(world)) {
+        if (body.label === "fallingObject" && !body.collected) {
+          const dir = body.position.x < center ? 1 : -1;
+          Body.applyForce(body, body.position, {
+            x: dir * 0.02 * ((body.circleRadius || 20) / 20),
+            y: -0.02
+          });
+        }
+      }
+    }
+
+    if (cosmicUpgrades.autoBuyer && now - lastAutoBuy > AUTO_BUY_INTERVAL) {
+      lastAutoBuy = now;
+      for (let i = 0; i < 3; i++) autoBuy();
     }
 
     const canvasWidth = canvas.width;
@@ -989,111 +839,107 @@ const frameDuration = 1000 / maxFps;
 })();
 
 setInterval(saveGame, 5000);
-window.addEventListener("resize", updateCanvasSize);
+window.addEventListener("resize", () => {
+  updateCanvasSize();
+  setState({ smallScreen: window.innerWidth <= SMALL_SCREEN_WIDTH });
+});
 
-/* Popup & Settings Event Listeners */
+/* UI Actions */
 
-onClick(toggleButtonHolder, () => {
-  const isOpen = buttonHolder.style.display !== "none";
-  toggleButtonHolder.classList.toggle("active", !isOpen);
+function clickUpgrade(key) {
+  const value = buttons[key];
+  if (!value) return;
 
-  if (!isOpen) {
-    buttonHolder.style.display = "flex";
-    buttonHolder.style.animation = "appear 0.3s ease-out forwards";
-    buttonHolder.addEventListener(
-      "animationend",
-      () => {
-        buttonHolder.style.animation = "";
-      },
-      { once: true }
-    );
-  } else {
-    buttonHolder.style.animation = "disappear 0.3s ease-in forwards";
-    buttonHolder.addEventListener(
-      "animationend",
-      () => {
-        buttonHolder.style.display = "none";
-        buttonHolder.style.animation = "";
-      },
-      { once: true }
-    );
+  if (points < value.upgradeCost) {
+    alert("Not enough points for upgrade!");
+    return;
   }
-});
 
-onClick(element("openPerksShop"), () => {
-  openPopup(perksShop);
-});
-onClick(element("openPrestige"), () => {
-  prestigeUI.open = true;
-  prestigeUI.lastRefresh = 0;
-  renderPrestigePopup();
-  openPopup(prestigePopup);
-});
-onClick(element("openSettings"), () => {
-  openPopup(settingsPopup);
-});
+  let ok;
+  try {
+    ok = value.purchaseCondition() === true;
+  } catch (_) {
+    ok = false;
+  }
+  if (!ok) {
+    alert("You cannot purchase this upgrade right now!");
+    return;
+  }
 
-document.querySelectorAll("button.closePopup").forEach(el => {
-  onClick(el, () => {
-    closePopups();
-    prestigeUI.open = false;
-  });
-});
-
-/* Perk Buttons */
-
-for (const key in perksData) {
-  const perk = perksData[key];
-  const button = create("button", {
-    id: key,
-    innerText: `${perk.baseText} (Cost: ${formatNumber(perk.cost)})`
-  });
-  onClick(button, () => {
-    if (points < perk.cost) return alert("Not enough points for upgrade!");
-    if (prestigeLevel < (perk.requiredLevel || 0))
-      return alert(`This perk requires prestige level ${perk.requiredLevel}.`);
-    if (perks.has(key)) return;
-    points -= perk.cost;
-    perks.add(key);
-    updateStuff();
-  });
-  const description = create("p", { innerText: perk.description });
-  perksButtonHolder.appendChild(button);
-  perksButtonHolder.appendChild(description);
-  perk.element = button;
+  buyUpgrade(key);
 }
 
-onClick(toggleMusicButton, () => {
+function clickPerk(key) {
+  const perk = perksData[key];
+  if (points < perk.cost) return alert("Not enough points for upgrade!");
+  if (prestigeLevel < (perk.requiredLevel || 0))
+    return alert(`This perk requires prestige level ${perk.requiredLevel}.`);
+  if (perks.has(key)) return;
+  points -= perk.cost;
+  perks.add(key);
+  updateStuff();
+}
+
+function buyPrestigeItem(id) {
+  const item = prestigeShopItems.find(i => i.id === id);
+  if (!item) return;
+  const cost = prestigeItemCost(item, prestigeUpgrades);
+  if (item.requiredLevel > prestigeLevel)
+    return alert(`Requires prestige level ${item.requiredLevel}.`);
+  if (prestigePoints < cost) return alert("Not enough prestige points.");
+  if (!item.condition(prestigeUpgrades)) return alert("You can't buy this right now.");
+  prestigePoints -= cost;
+  if (item.whenPurchase) item.whenPurchase(prestigeUpgrades);
+  saveGame();
+  updateStuff();
+  playSoundEffect("./sounds/hint.wav", 0.6);
+}
+
+function buyCosmicItem(id) {
+  const item = cosmicShopItems.find(i => i.id === id);
+  if (!item) return;
+  const cost = cosmicItemCost(item, cosmicUpgrades);
+  if (item.requiredCosmicLevel > cosmicLevel)
+    return alert(`Requires cosmic ball level ${item.requiredCosmicLevel}.`);
+  if (cosmicPoints < cost) return alert("Not enough cosmic points.");
+  if (!item.condition(cosmicUpgrades)) return alert("You can't buy this right now.");
+  cosmicPoints -= cost;
+  if (item.whenPurchase) item.whenPurchase(cosmicUpgrades);
+  if (item.id === "cosm_springs") Composite.add(world, [trampolineLeft, trampolineRight]);
+  if (item.id === "cosm_fans") Composite.add(world, [fanLeft, fanRight]);
+  saveGame();
+  updateStuff();
+  playSoundEffect("./sounds/hint.wav", 0.6);
+}
+
+function toggleMusic() {
   if (backgroundMusic.paused) {
     backgroundMusic.volume = 0.5;
     backgroundMusic.play().catch(() => {});
     localStorage.setItem("music", "true");
-    toggleMusicButton.textContent = "Turn Music Off";
   } else {
     backgroundMusic.pause();
     localStorage.setItem("music", "false");
-    toggleMusicButton.textContent = "Turn Music On";
   }
-});
+  setState({ musicOn: !backgroundMusic.paused });
+}
 
-onClick(setMusicUrlButton, () => {
-  const musicUrlInput = element("musicUrlInput").value;
-
-  let url;
+function setMusicUrl(url) {
+  let parsed;
   try {
-    url = new URL(musicUrlInput);
+    parsed = new URL(url);
   } catch (_) {
     try {
-      url = new URL("/music/" + musicUrlInput, window.location.href);
+      parsed = new URL("/music/" + url, window.location.href);
     } catch (_) {
-      url = "/music/Disco con Tutti.mp3";
+      parsed = "/music/Disco con Tutti.mp3";
     }
   }
 
   const wasPaused = backgroundMusic.paused;
-  localStorage.setItem("musicUrl", url);
+  localStorage.setItem("musicUrl", parsed);
   backgroundMusic.pause();
-  backgroundMusic.src = url;
+  backgroundMusic.src = parsed;
   backgroundMusic.load();
   backgroundMusic.addEventListener(
     "loadeddata",
@@ -1103,20 +949,41 @@ onClick(setMusicUrlButton, () => {
     },
     { once: true }
   );
-});
+}
 
-onClick(toggleSoundEffectsButton, () => {
+function toggleSound() {
   const next = !isSoundEffectsEnabled();
   localStorage.setItem("effects", String(next));
   setSoundEffectsEnabled(next);
-  toggleSoundEffectsButton.textContent = next
-    ? "Disable Sound Effects"
-    : "Enable Sound Effects";
-});
+  setState({ soundOn: next });
+}
 
-onClick(openAdvancements, () => {
-  openPopup(advancementsPopup);
-  renderAdvancementsPopup();
+function deleteAllData() {
+  if (
+    window.confirm(
+      `Are you REALLY sure? You won't be able to recover this data and it will be lost FOREVER!`
+    ) === true
+  ) {
+    window.deleteAllMyData = true;
+    localStorage.removeItem("gameData");
+    window.location.reload();
+  }
+}
+
+setActions({
+  buyUpgrade: clickUpgrade,
+  buyPerk: clickPerk,
+  buyPrestigeItem,
+  buyCosmicItem,
+  claimPrestige,
+  enterUniverse: enterNewUniverse,
+  toggleMusic,
+  setMusicUrl,
+  toggleSound,
+  deleteAllData,
+  openPopup,
+  closePopups,
+  toggleButtons
 });
 
 /* Init */
@@ -1146,9 +1013,4 @@ window.addEventListener(
 
 updateCanvasSize();
 updateStuff();
-
-toggleMusicButton.textContent =
-  localStorage.getItem("music") === "false" ? "Turn Music On" : "Turn Music Off";
-toggleSoundEffectsButton.textContent = isSoundEffectsEnabled()
-  ? "Disable Sound Effects"
-  : "Enable Sound Effects";
+render(h(App), document.getElementById("app"));

@@ -9,9 +9,11 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@preact/preset-vite": "^2.10.6",
     "vite": "^8.0.9"
   },
   "dependencies": {
-    "matter-js": "^0.20.0"
+    "matter-js": "^0.20.0",
+    "preact": "^10.29.8"
   }
 }
